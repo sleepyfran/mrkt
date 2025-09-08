@@ -1,0 +1,12 @@
+[package]
+name = "mrkt"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+base64 = "0.22.1"
+rand = "0.9.2"
+rocket = "0.5.1"
+diesel = { version = "2.2.0", features = ["sqlite"] }
+libsqlite3-sys = { version = "0.35.0", features = ["bundled"] }
+dotenvy = "0.15"
