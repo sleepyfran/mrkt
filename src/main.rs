@@ -2,6 +2,7 @@
 extern crate rocket;
 
 mod api;
+mod db;
 
 #[get("/")]
 fn index() -> &'static str {
