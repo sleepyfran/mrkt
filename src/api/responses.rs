@@ -3,8 +3,17 @@ use rocket::{http::Status, response::status};
 /// An alias for a custom error type.
 pub type ApiError = status::Custom<()>;
 
+/// An alias for a custom empty response type.
+pub type EmptyResponse = status::Custom<()>;
+
 /// A type alias for a result with a custom error type.
 pub type ApiResult<T> = Result<T, ApiError>;
+
+// ----- 2xx
+
+pub fn created() -> ApiError {
+    status::Custom(Status::Created, ())
+}
 
 // ----- 4xx
 

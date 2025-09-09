@@ -2,6 +2,7 @@
 extern crate rocket;
 
 mod api;
+mod core;
 mod db;
 
 #[get("/")]

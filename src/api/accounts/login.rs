@@ -4,6 +4,7 @@ use rocket::serde::json::Json;
 use serde::Deserialize;
 
 use crate::api::responses::{ApiResult, server_error, unauthorized};
+use crate::core::auth::verify_password;
 use crate::db::create_connection;
 use crate::db::model::User;
 use crate::db::schema::users;
@@ -20,7 +21,8 @@ pub async fn login(user: Json<LoginData>) -> ApiResult<String> {
         .map_err(|_| server_error())?;
 
     if let Some(db_user) = db_user {
-        if user.password != db_user.hashed_password {
+        let password_is_correct = verify_password(&user.password, &db_user.hashed_password);
+        if !password_is_correct {
             Err(unauthorized())
         } else {
             Ok(format!("User {} logged in", user.username))

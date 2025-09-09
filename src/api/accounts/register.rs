@@ -2,20 +2,22 @@ use diesel::{Connection, RunQueryDsl};
 use rocket::serde::json::Json;
 use serde::Deserialize;
 
-use crate::api::responses::conflict;
+use crate::api::responses::{EmptyResponse, conflict, created};
 use crate::api::{responses::ApiResult, validators::validate_length};
+use crate::core::auth::hash_password;
 use crate::db::create_connection;
 use crate::db::insertables::NewUser;
 use crate::db::schema::users;
 
 #[post("/register", data = "<user>")]
-pub async fn register(user: Json<NewUserData>) -> ApiResult<String> {
+pub async fn register(user: Json<NewUserData>) -> ApiResult<EmptyResponse> {
     validate_length(&user.username, 1, 250)?;
     validate_length(&user.password, 8, 100)?;
 
+    let hashed_password = hash_password(&user.password);
     let new_user = NewUser {
         username: user.username.clone(),
-        hashed_password: user.password.clone(),
+        hashed_password,
     };
 
     let mut connection = create_connection();
@@ -26,10 +28,7 @@ pub async fn register(user: Json<NewUserData>) -> ApiResult<String> {
     });
 
     match insertion_result {
-        Ok(_) => Ok(format!(
-            "Hello, {}! Your password is {}",
-            user.username, user.password
-        )),
+        Ok(_) => Ok(created()),
         Err(_) => Err(conflict()),
     }
 }
