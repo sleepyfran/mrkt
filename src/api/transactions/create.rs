@@ -1,5 +1,4 @@
-use diesel::{ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper};
-use rocket::{http::Status, serde::json::Json};
+use rocket::{State, http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -9,12 +8,8 @@ use crate::{
         validators::{validate_greater_than, validate_is_valid_date, validate_not_empty},
     },
     db::{
-        create_connection,
-        model::{
-            account::{Account, AccountId},
-            transaction::TransactionType,
-        },
-        schema::accounts,
+        repos::accounts_repo::{Account, AccountId},
+        state::DbState,
     },
     impl_responder,
 };
@@ -51,6 +46,7 @@ impl_responder! {
 
 #[post("/", data = "<transaction>")]
 pub async fn create(
+    db_state: &State<DbState>,
     auth_user: AuthenticatedUser<'_>,
     transaction: Json<TransactionData>,
 ) -> Result<(), CreateError> {
@@ -63,12 +59,8 @@ pub async fn create(
     validate_not_empty(&transaction.ticker_symbol).map_err(|_| CreateError::InvalidTickerSymbol)?;
     validate_is_valid_date(&transaction.date).map_err(|_| CreateError::InvalidDate)?;
 
-    let mut connection = create_connection();
-    let account = accounts::table
-        .filter(accounts::id.eq(transaction.account_id))
-        .select(Account::as_select())
-        .first::<Account>(&mut connection)
-        .optional()
+    let account = Account::by_id(&db_state.pool, transaction.account_id)
+        .await
         .map_err(|_| CreateError::DatabaseError)?;
 
     if let None = account {
@@ -94,7 +86,7 @@ pub async fn create(
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionData {
     pub account_id: AccountId,
-    pub transaction_type: TransactionType,
+    // pub transaction_type: TransactionType,
     pub price_per_share: f32,
     pub share_quantity: f32,
     pub fees: f32,

@@ -1,41 +1,23 @@
-use diesel::{Connection, ExpressionMethods, RunQueryDsl, SqliteConnection};
-
 use crate::{
     core::auth::generate_session_token,
-    db::{
-        model::{
-            session::{Session, Token},
-            user::UserId,
-        },
-        schema::sessions,
+    db::repos::{
+        DatabaseError, Pool,
+        sessions_repo::{Session, Token},
+        users_repo::UserId,
     },
 };
 
 /// Creates a new session for the given user ID, generating a unique session token, saving it
 /// to the database, and returning the session token that was created.
-pub async fn create_session(
-    connection: &mut SqliteConnection,
-    user_id: UserId,
-) -> Result<Token, diesel::result::Error> {
+pub async fn create_session(pool: &Pool, user_id: UserId) -> Result<Token, DatabaseError> {
     let session_token = generate_session_token();
 
-    let new_session = Session {
-        id: None,
-        user_id,
-        token: session_token.clone(),
-        expires_at: None, /* Defaults to six months from now at the SQL level. */
-    };
+    let tx = pool.begin().await?;
 
-    connection
-        .transaction(|conn| {
-            // Delete expired sessions.
-            diesel::delete(sessions::table)
-                .filter(sessions::expires_at.lt(diesel::dsl::now))
-                .execute(conn)?;
+    Session::cleanup_expired(pool);
+    let session = Session::insert(pool, user_id, session_token).await?;
 
-            diesel::insert_into(sessions::table)
-                .values(new_session)
-                .execute(conn)
-        })
-        .map(|_| session_token)
+    tx.commit().await;
+
+    Ok(session.token)
 }

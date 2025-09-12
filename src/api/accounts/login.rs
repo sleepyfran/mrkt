@@ -1,5 +1,4 @@
-use diesel::{ExpressionMethods, QueryDsl, SqliteConnection};
-use diesel::{OptionalExtension, RunQueryDsl, SelectableHelper};
+use rocket::State;
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
@@ -7,9 +6,9 @@ use thiserror::Error;
 
 use crate::api::accounts::session::create_session;
 use crate::core::auth::verify_password;
-use crate::db::create_connection;
-use crate::db::model::user::User;
-use crate::db::schema::users;
+use crate::db::repos::Pool;
+use crate::db::repos::users_repo::User;
+use crate::db::state::DbState;
 use crate::impl_responder;
 
 #[derive(Error, Debug)]
@@ -28,14 +27,12 @@ impl_responder! {
 }
 
 #[post("/login", data = "<login_data>")]
-pub async fn login(login_data: Json<LoginData>) -> Result<Json<LoginResponse>, LoginError> {
-    let mut connection = create_connection();
-
-    let db_user = users::table
-        .filter(users::username.eq(&login_data.username))
-        .select(User::as_select())
-        .first::<User>(&mut connection)
-        .optional()
+pub async fn login(
+    db_state: &State<DbState>,
+    login_data: Json<LoginData>,
+) -> Result<Json<LoginResponse>, LoginError> {
+    let db_user = User::find_by_username(&db_state.pool, &login_data.username)
+        .await
         .map_err(|_| LoginError::ServerError)?;
 
     if let Some(db_user) = db_user {
@@ -44,18 +41,15 @@ pub async fn login(login_data: Json<LoginData>) -> Result<Json<LoginResponse>, L
             return Err(LoginError::InvalidCredentials);
         }
 
-        _login(&mut connection, db_user).await
+        _login(&db_state.pool, db_user).await
     } else {
         Err(LoginError::InvalidCredentials)
     }
 }
 
-async fn _login(
-    connection: &mut SqliteConnection,
-    user: User,
-) -> Result<Json<LoginResponse>, LoginError> {
+async fn _login(pool: &Pool, user: User) -> Result<Json<LoginResponse>, LoginError> {
     // TODO: Potentially limit the number of sessions.
-    let token = create_session(connection, user.id.unwrap()).await;
+    let token = create_session(pool, user.id.unwrap()).await;
 
     // Not being able to create a session token is not a user error, something's wrong!
     if let Err(_) = token {

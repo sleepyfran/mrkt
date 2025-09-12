@@ -1,4 +1,4 @@
-use diesel::{Connection, RunQueryDsl};
+use rocket::State;
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use serde::Deserialize;
@@ -6,9 +6,8 @@ use thiserror::Error;
 
 use crate::api::validators::validate_length;
 use crate::core::auth::hash_password;
-use crate::db::create_connection;
-use crate::db::insertables::NewUser;
-use crate::db::schema::users;
+use crate::db::repos::users_repo::User;
+use crate::db::state::DbState;
 use crate::impl_responder;
 
 #[derive(Error, Debug)]
@@ -19,6 +18,8 @@ pub enum RegisterError {
     InvalidPassword,
     #[error("Username already exists")]
     UsernameAlreadyExists,
+    #[error("Internal server error")]
+    InternalServerError,
 }
 
 impl_responder! {
@@ -26,30 +27,31 @@ impl_responder! {
         InvalidUsername => Status::BadRequest,
         InvalidPassword => Status::BadRequest,
         UsernameAlreadyExists => Status::Conflict,
+        InternalServerError => Status::InternalServerError,
     }
 }
 
 #[post("/register", data = "<user>")]
-pub async fn register(user: Json<NewUserData>) -> Result<(), RegisterError> {
+pub async fn register(
+    db_state: &State<DbState>,
+    user: Json<NewUserData>,
+) -> Result<(), RegisterError> {
     validate_length(&user.username, 1, 250).map_err(|_| RegisterError::InvalidUsername)?;
     validate_length(&user.password, 8, 100).map_err(|_| RegisterError::InvalidPassword)?;
 
     let hashed_password = hash_password(&user.password);
-    let new_user = NewUser {
-        username: user.username.clone(),
-        hashed_password,
-    };
-
-    let mut connection = create_connection();
-    let insertion_result = connection.transaction(|conn| {
-        diesel::insert_into(users::table)
-            .values(new_user)
-            .execute(conn)
-    });
+    let insertion_result = User::insert(&db_state.pool, &user.username, &hashed_password).await;
 
     match insertion_result {
         Ok(_) => Ok(()),
-        Err(_) => Err(RegisterError::UsernameAlreadyExists),
+        Err(err) => {
+            let db_error = err.as_database_error();
+            if db_error.is_some() && db_error.unwrap().is_unique_violation() {
+                Err(RegisterError::UsernameAlreadyExists)
+            } else {
+                Err(RegisterError::InternalServerError)
+            }
+        }
     }
 }
 

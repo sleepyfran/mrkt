@@ -1,3 +1,31 @@
+-- ================== USERS.
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    hashed_password TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ================== SESSIONS.
+CREATE TABLE sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    token TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP DEFAULT (datetime('now', '+6 months')),
+
+    FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+-- Index to query sessions by user_id.
+CREATE INDEX idx_sessions_user_id ON sessions(user_id);
+
+-- Index to query sessions by token.
+CREATE INDEX idx_sessions_token ON sessions(token);
+
+
+-- ================== ACCOUNTS.
 CREATE TABLE accounts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -8,6 +36,7 @@ CREATE TABLE accounts (
     FOREIGN KEY(owner_id) REFERENCES users(id)
 );
 
+-- ================== TRANSACTIONS.
 CREATE TABLE transactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     owner_id INTEGER NOT NULL,

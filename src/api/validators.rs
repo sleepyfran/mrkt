@@ -1,6 +1,4 @@
-use std::fmt::Display;
-
-use chrono::NaiveDate;
+use time::{Date, macros::format_description};
 
 /// Validates that the length of a string is within a specified range.
 pub fn validate_length(input: &str, min: usize, max: usize) -> Result<(), ()> {
@@ -18,7 +16,7 @@ pub fn validate_not_empty(input: &str) -> Result<(), ()> {
 
 /// Validates that a string is a valid date in the format YYYY-MM-DD.
 pub fn validate_is_valid_date(input: &str) -> Result<(), ()> {
-    NaiveDate::parse_from_str(input, "%Y-%m-%d")
+    Date::parse(input, format_description!("[year]-[month]-[day]"))
         .map(|_| ())
         .map_err(|_| ())
 }

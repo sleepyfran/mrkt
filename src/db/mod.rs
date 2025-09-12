@@ -1,18 +1,16 @@
-pub mod insertables;
-pub mod model;
-pub mod schema;
+pub mod repos;
+pub mod state;
 
-use diesel::prelude::*;
 use dotenvy::dotenv;
+use sqlx::SqlitePool;
 
 /// Creates and returns a new SQLite connection to the database specified by the environment
 /// variable DATABASE_URL.
-///
-/// TODO: Potentially move to have a pool of connections.
-pub fn create_connection() -> SqliteConnection {
+pub async fn create_pool() -> SqlitePool {
     dotenv().ok();
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    SqliteConnection::establish(&database_url)
+    SqlitePool::connect(&database_url)
+        .await
         .expect(&format!("Error connecting to {}", database_url))
 }
