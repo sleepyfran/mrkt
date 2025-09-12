@@ -15,4 +15,5 @@ fn rocket() -> _ {
     rocket::build()
         .mount("/", routes![index])
         .mount("/accounts", api::accounts::routes())
+        .mount("/transactions", api::transactions::routes())
 }

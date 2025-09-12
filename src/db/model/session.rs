@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use diesel::prelude::*;
 
 use crate::db::{model::user::UserId, schema::sessions};
@@ -14,4 +15,7 @@ pub struct Session {
     pub user_id: UserId,
     /// Unique token for the session.
     pub token: Token,
+    /// Timestamp when the session expires. Defaults to 6 months after the creation time, so should
+    /// be always available even if typed as optional.
+    pub expires_at: Option<NaiveDateTime>,
 }

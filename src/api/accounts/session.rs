@@ -23,6 +23,7 @@ pub async fn create_session(
         id: None,
         user_id,
         token: session_token.clone(),
+        expires_at: None, /* Defaults to six months from now at the SQL level. */
     };
 
     connection

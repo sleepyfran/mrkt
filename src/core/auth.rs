@@ -6,6 +6,7 @@ use argon2::{
     },
 };
 use base64::prelude::*;
+use rocket::route::Outcome;
 
 /// Creates an Argon2 hasher with the recommended parameters from the OWASP Password Storage Cheat Sheet:
 /// https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#introduction
