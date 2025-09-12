@@ -30,9 +30,10 @@ diesel::table! {
         transaction_date -> Text,
         quantity -> Float,
         price_per_share -> Float,
+        currency -> Text,
         fees -> Float,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
+        created_at -> Nullable<Timestamp>,
+        updated_at -> Nullable<Timestamp>,
     }
 }
 

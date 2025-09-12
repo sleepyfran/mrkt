@@ -17,9 +17,10 @@ CREATE TABLE transactions (
     transaction_date TEXT NOT NULL,
     quantity REAL NOT NULL CHECK (quantity > 0),
     price_per_share REAL NOT NULL CHECK (price_per_share > 0),
+    currency TEXT NOT NULL,
     fees REAL NOT NULL CHECK (fees >= 0),
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY(owner_id) REFERENCES users(id)
     FOREIGN KEY(account_id) REFERENCES accounts(id)

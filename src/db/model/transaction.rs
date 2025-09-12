@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use diesel::deserialize::{self, FromSql, FromSqlRow};
 use diesel::expression::AsExpression;
 use diesel::prelude::*;
@@ -41,7 +42,7 @@ impl FromSql<Integer, diesel::sqlite::Sqlite> for TransactionType {
     }
 }
 
-#[derive(Queryable, Selectable)]
+#[derive(Queryable, Selectable, Insertable)]
 #[diesel(table_name = transactions)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Transaction {
@@ -56,7 +57,6 @@ pub struct Transaction {
     pub transaction_date: String,
     pub quantity: f32,
     pub price_per_share: f32,
+    pub currency: String,
     pub fees: f32,
-    pub created_at: String,
-    pub updated_at: String,
 }
