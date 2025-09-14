@@ -17,7 +17,7 @@ async fn rocket() -> _ {
         .expect("Failed to migrate database");
 
     rocket::build()
-        .mount("/accounts", api::accounts::routes())
+        .mount("/accounts", api::users::routes())
         .mount("/transactions", api::transactions::routes())
         .manage(DbState { pool })
 }

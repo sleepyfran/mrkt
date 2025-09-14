@@ -32,7 +32,7 @@ impl User {
     }
 
     /// Attempts to find a user by their username.
-    pub async fn find_by_username(
+    pub async fn by_username(
         pool: &SqlitePool,
         username: &str,
     ) -> Result<Option<User>, sqlx::Error> {

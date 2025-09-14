@@ -4,7 +4,7 @@ use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::api::accounts::session::create_session;
+use crate::api::users::session::create_session;
 use crate::core::auth::verify_password;
 use crate::db::repos::Pool;
 use crate::db::repos::users_repo::User;
@@ -31,7 +31,7 @@ pub async fn login(
     db_state: &State<DbState>,
     login_data: Json<LoginData>,
 ) -> Result<Json<LoginResponse>, LoginError> {
-    let db_user = User::find_by_username(&db_state.pool, &login_data.username)
+    let db_user = User::by_username(&db_state.pool, &login_data.username)
         .await
         .map_err(|_| LoginError::ServerError)?;
 
