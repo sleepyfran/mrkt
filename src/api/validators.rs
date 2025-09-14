@@ -15,10 +15,8 @@ pub fn validate_not_empty(input: &str) -> Result<(), ()> {
 }
 
 /// Validates that a string is a valid date in the format YYYY-MM-DD.
-pub fn validate_is_valid_date(input: &str) -> Result<(), ()> {
-    Date::parse(input, format_description!("[year]-[month]-[day]"))
-        .map(|_| ())
-        .map_err(|_| ())
+pub fn validate_is_valid_date(input: &str) -> Result<Date, ()> {
+    Date::parse(input, format_description!("[year]-[month]-[day]")).map_err(|_| ())
 }
 
 /// Validates that a comparable value is greater than a specified value.

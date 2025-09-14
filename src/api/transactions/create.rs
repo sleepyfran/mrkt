@@ -1,6 +1,7 @@
 use rocket::{State, http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use time::PrimitiveDateTime;
 
 use crate::{
     api::{
@@ -62,7 +63,7 @@ pub async fn create(
     // TODO: Validate that the currency is a valid ISO 4217 code.
     validate_not_empty(&transaction.currency).map_err(|_| CreateError::InvalidCurrency)?;
     validate_not_empty(&transaction.ticker_symbol).map_err(|_| CreateError::InvalidTickerSymbol)?;
-    validate_is_valid_date(&transaction.date).map_err(|_| CreateError::InvalidDate)?;
+    let date = validate_is_valid_date(&transaction.date).map_err(|_| CreateError::InvalidDate)?;
 
     let account = Account::by_id(&db_state.pool, transaction.account_id).await?;
     if let None = account {
@@ -74,6 +75,7 @@ pub async fn create(
         auth_user.user_id,
         transaction.account_id,
         transaction.transaction_type,
+        date,
         transaction.ticker_symbol.as_str(),
         transaction.share_quantity,
         transaction.price_per_share,
@@ -85,6 +87,7 @@ pub async fn create(
     match transaction_result {
         Ok(transaction) => Ok(Json(transaction)),
         Err(err) => {
+            println!("Error creating transaction: {:?}", err);
             if is_foreign_key_violation(&err) {
                 Err(CreateError::AccountNotFound)
             } else {
