@@ -14,10 +14,10 @@ pub async fn create_session(pool: &Pool, user_id: UserId) -> Result<Token, Datab
 
     let tx = pool.begin().await?;
 
-    Session::cleanup_expired(pool);
+    let _ = Session::cleanup_expired(pool).await;
     let session = Session::insert(pool, user_id, session_token).await?;
 
-    tx.commit().await;
+    let _ = tx.commit().await;
 
     Ok(session.token)
 }

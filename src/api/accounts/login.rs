@@ -12,7 +12,7 @@ use crate::db::state::DbState;
 use crate::impl_responder;
 
 #[derive(Error, Debug)]
-enum LoginError {
+pub enum LoginError {
     #[error("Invalid username or password")]
     InvalidCredentials,
     #[error("Internal server error")]
@@ -21,8 +21,8 @@ enum LoginError {
 
 impl_responder! {
     LoginError {
-        InvalidCredentials => Status::Unauthorized,
-        ServerError => Status::InternalServerError,
+        LoginError::InvalidCredentials => Status::Unauthorized,
+        LoginError::ServerError => Status::InternalServerError,
     }
 }
 

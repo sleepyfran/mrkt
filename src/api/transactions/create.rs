@@ -8,7 +8,12 @@ use crate::{
         validators::{validate_greater_than, validate_is_valid_date, validate_not_empty},
     },
     db::{
-        repos::accounts_repo::{Account, AccountId},
+        repos::{
+            DatabaseError,
+            accounts_repo::{Account, AccountId},
+            is_foreign_key_violation,
+            transactions_repo::{Transaction, TransactionType},
+        },
         state::DbState,
     },
     impl_responder,
@@ -29,18 +34,18 @@ pub enum CreateError {
     #[error("The specified account ID does not exist")]
     AccountNotFound,
     #[error("Database error")]
-    DatabaseError,
+    DatabaseError(#[from] DatabaseError),
 }
 
 impl_responder! {
     CreateError {
-        InvalidPricePerShare => Status::BadRequest,
-        InvalidShareQuantity => Status::BadRequest,
-        InvalidCurrency => Status::BadRequest,
-        InvalidTickerSymbol => Status::BadRequest,
-        InvalidDate => Status::BadRequest,
-        AccountNotFound => Status::NotFound,
-        DatabaseError => Status::InternalServerError,
+        CreateError::InvalidPricePerShare => Status::BadRequest,
+        CreateError::InvalidShareQuantity => Status::BadRequest,
+        CreateError::InvalidCurrency => Status::BadRequest,
+        CreateError::InvalidTickerSymbol => Status::BadRequest,
+        CreateError::InvalidDate => Status::BadRequest,
+        CreateError::AccountNotFound => Status::NotFound,
+        CreateError::DatabaseError(_) => Status::InternalServerError,
     }
 }
 
@@ -49,7 +54,7 @@ pub async fn create(
     db_state: &State<DbState>,
     auth_user: AuthenticatedUser<'_>,
     transaction: Json<TransactionData>,
-) -> Result<(), CreateError> {
+) -> Result<Json<Transaction>, CreateError> {
     validate_greater_than(transaction.price_per_share, 0.0)
         .map_err(|_| CreateError::InvalidPricePerShare)?;
     validate_greater_than(transaction.share_quantity, 0.0)
@@ -59,37 +64,43 @@ pub async fn create(
     validate_not_empty(&transaction.ticker_symbol).map_err(|_| CreateError::InvalidTickerSymbol)?;
     validate_is_valid_date(&transaction.date).map_err(|_| CreateError::InvalidDate)?;
 
-    let account = Account::by_id(&db_state.pool, transaction.account_id)
-        .await
-        .map_err(|_| CreateError::DatabaseError)?;
-
+    let account = Account::by_id(&db_state.pool, transaction.account_id).await?;
     if let None = account {
         return Err(CreateError::AccountNotFound);
     }
 
-    // let transaction = Transaction {
-    //     id: None,
-    //     owner_id: auth_user.user_id,
-    //     account_id: transaction.account_id,
-    //     transaction_type: transaction.transaction_type,
-    //     ticker_symbol: transaction.ticker_symbol.clone(),
-    //     transaction_date: transaction.date.clone(),
-    //     quantity: transaction.share_quantity,
-    //     price_per_share: transaction.price_per_share,
-    //     currency: transaction.currency.clone(),
-    //     fees: transaction.fees,
-    // };
+    let transaction_result = Transaction::insert(
+        &db_state.pool,
+        auth_user.user_id,
+        transaction.account_id,
+        transaction.transaction_type,
+        transaction.ticker_symbol.as_str(),
+        transaction.share_quantity,
+        transaction.price_per_share,
+        transaction.currency.as_str(),
+        transaction.fees,
+    )
+    .await;
 
-    Ok(())
+    match transaction_result {
+        Ok(transaction) => Ok(Json(transaction)),
+        Err(err) => {
+            if is_foreign_key_violation(&err) {
+                Err(CreateError::AccountNotFound)
+            } else {
+                Err(CreateError::DatabaseError(err))
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionData {
     pub account_id: AccountId,
-    // pub transaction_type: TransactionType,
-    pub price_per_share: f32,
-    pub share_quantity: f32,
-    pub fees: f32,
+    pub transaction_type: TransactionType,
+    pub price_per_share: f64,
+    pub share_quantity: f64,
+    pub fees: f64,
     pub currency: String,
     pub ticker_symbol: String,
     pub date: String,

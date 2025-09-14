@@ -23,7 +23,7 @@ impl Session {
             r#"
                 INSERT INTO sessions (user_id, token)
                 VALUES ($1, $2)
-                RETURNING *
+                RETURNING id, expires_at
             "#,
             user_id,
             token

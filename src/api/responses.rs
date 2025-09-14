@@ -6,17 +6,21 @@ pub struct ErrorResponse {
 
 /// Macro to implement the `Responder` trait for a custom enum that returns JSON error responses.
 /// Uses the Display implementation (from thiserror's #[error] attribute) for error messages.
+/// Supports both simple variants and variants with associated data (like #[from] parameters).
 /// Example:
 /// ```
 /// #[derive(Error, Debug)]
 /// enum CreateError {
 ///     #[error("Invalid input")]
 ///     InvalidPricePerShare,
+///     #[error("Database error")]
+///     DatabaseError(#[from] DatabaseError),
 /// }
 ///
 /// impl_responder! {
 ///     CreateError {
-///         InvalidPricePerShare => Status::BadRequest
+///         CreateError::InvalidPricePerShare => Status::BadRequest,
+///         CreateError::DatabaseError(_) => Status::InternalServerError
 ///     }
 /// }
 /// ```
@@ -25,7 +29,7 @@ macro_rules! impl_responder {
     (
         $error_type:ident {
             $(
-                $variant:ident => $status:expr
+                $pattern:pat => $status:expr
             ),* $(,)?
         }
     ) => {
@@ -37,7 +41,7 @@ macro_rules! impl_responder {
 
                 let status = match self {
                     $(
-                        $error_type::$variant => $status,
+                        $pattern => $status,
                     )*
                 };
 

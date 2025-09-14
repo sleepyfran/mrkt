@@ -6,6 +6,7 @@ use thiserror::Error;
 
 use crate::api::validators::validate_length;
 use crate::core::auth::hash_password;
+use crate::db::repos::is_unique_constraint_violation;
 use crate::db::repos::users_repo::User;
 use crate::db::state::DbState;
 use crate::impl_responder;
@@ -24,10 +25,10 @@ pub enum RegisterError {
 
 impl_responder! {
     RegisterError {
-        InvalidUsername => Status::BadRequest,
-        InvalidPassword => Status::BadRequest,
-        UsernameAlreadyExists => Status::Conflict,
-        InternalServerError => Status::InternalServerError,
+        RegisterError::InvalidUsername => Status::BadRequest,
+        RegisterError::InvalidPassword => Status::BadRequest,
+        RegisterError::UsernameAlreadyExists => Status::Conflict,
+        RegisterError::InternalServerError => Status::InternalServerError,
     }
 }
 
@@ -45,8 +46,7 @@ pub async fn register(
     match insertion_result {
         Ok(_) => Ok(()),
         Err(err) => {
-            let db_error = err.as_database_error();
-            if db_error.is_some() && db_error.unwrap().is_unique_violation() {
+            if is_unique_constraint_violation(&err) {
                 Err(RegisterError::UsernameAlreadyExists)
             } else {
                 Err(RegisterError::InternalServerError)
