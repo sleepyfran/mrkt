@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::db::repos::{DatabaseError, Pool, users_repo::UserId};
+use crate::core::db::repos::{DatabaseError, Pool, users_repo::UserId};
 
 pub type AccountId = i64;
 

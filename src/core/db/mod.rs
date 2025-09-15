@@ -1,5 +1,4 @@
 pub mod repos;
-pub mod state;
 
 use dotenvy::dotenv;
 use sqlx::SqlitePool;

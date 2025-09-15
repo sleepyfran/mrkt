@@ -8,10 +8,19 @@ mrkt uses [SQLite](https://www.sqlite.org/index.html) as its database, and handl
 the initial setup and migrations through the [sqlx-cli](https://docs.rs/crate/sqlx-cli/latest).
 
 To get started, start by installing the [sqlx-cli](https://docs.rs/crate/sqlx-cli/latest) tool
-and running the following commands:
+and copy over the environment file from the local template:
 
 ```bash
-sqlx create database # Create the actual db file
+cp .env.local.example .env
+```
+
+> You can also modify the `.env` file to change the database location if you want to store it somewhere else,
+> by default it's set to `mrkt.db` in the `target` directory.
+
+Once that's done, you can run the following commands to create the database and run any pending migrations:
+
+```bash
+sqlx database create # Create the actual db file
 sqlx migrate run     # Run all pending migrations
 ```
 

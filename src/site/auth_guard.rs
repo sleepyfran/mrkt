@@ -10,10 +10,10 @@ use crate::core::{
     state::CoreState,
 };
 
-/// Represents a session token passed through an HTTP header. Implements `FromRequest` to be able to
+/// Represents a session token passed through an HTTP cookie. Implements `FromRequest` to be able to
 /// use it as a request guard, which checks that the passed token is registered in the sessions table
 /// and is not expired.
-pub struct HeaderAuthenticatedUser<'r> {
+pub struct CookieAuthenticatedUser<'r> {
     /// The ID of the user associated with the session.
     pub user_id: UserId,
 
@@ -22,39 +22,30 @@ pub struct HeaderAuthenticatedUser<'r> {
 }
 
 #[rocket::async_trait]
-impl<'r> FromRequest<'r> for HeaderAuthenticatedUser<'r> {
+impl<'r> FromRequest<'r> for CookieAuthenticatedUser<'r> {
     type Error = ValidateSessionTokenError;
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let db_state = request.rocket().state::<CoreState>().unwrap();
 
-        match request.headers().get_one("Authorization") {
-            Some(token) => {
-                let key = token.strip_prefix("Bearer ");
-                if let None = key {
-                    return Outcome::Error((
-                        Status::Unauthorized,
-                        ValidateSessionTokenError::NonExistentToken(
-                            "Invalid Authorization header format".to_string(),
-                        ),
-                    ));
-                }
-
-                let key = key.unwrap();
-                let session_result = validate_session_token(&db_state.pool, key).await;
+        let cookies = request.cookies();
+        match cookies.get("session_token") {
+            Some(cookie) => {
+                let token = cookie.value();
+                let session_result = validate_session_token(&db_state.pool, token).await;
 
                 match session_result {
-                    Ok(session) => Outcome::Success(HeaderAuthenticatedUser {
+                    Ok(session) => Outcome::Success(CookieAuthenticatedUser {
                         user_id: session.user_id,
-                        token: key,
+                        token,
                     }),
                     Err(err) => Outcome::Error((Status::Unauthorized, err)),
                 }
             }
-            _ => Outcome::Error((
+            None => Outcome::Error((
                 Status::Unauthorized,
                 ValidateSessionTokenError::NonExistentToken(
-                    "No Authorization header found".to_string(),
+                    "No session_token cookie found".to_string(),
                 ),
             )),
         }

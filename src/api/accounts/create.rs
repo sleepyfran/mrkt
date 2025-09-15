@@ -1,23 +1,15 @@
 use rocket::{State, http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 use crate::{
-    api::{auth_guard::AuthenticatedUser, validators::validate_length},
-    db::{
-        repos::{DatabaseError, accounts_repo::Account},
-        state::DbState,
+    api::auth_guard::HeaderAuthenticatedUser,
+    core::{
+        Account,
+        accounts::{CreateAccountError, create_account},
+        state::CoreState,
     },
     impl_responder,
 };
-
-#[derive(Error, Debug)]
-pub enum CreateAccountError {
-    #[error("Invalid name")]
-    InvalidName,
-    #[error("Database error")]
-    DatabaseError(#[from] DatabaseError),
-}
 
 impl_responder! {
     CreateAccountError {
@@ -26,15 +18,13 @@ impl_responder! {
     }
 }
 
-#[post("/", data = "<account>")]
+#[post("/accounts", data = "<account>")]
 pub async fn create(
-    db_state: &State<DbState>,
-    auth_user: AuthenticatedUser<'_>,
+    db_state: &State<CoreState>,
+    auth_user: HeaderAuthenticatedUser<'_>,
     account: Json<AccountData>,
 ) -> Result<Json<Account>, CreateAccountError> {
-    validate_length(&account.name, 1, 250).map_err(|_| CreateAccountError::InvalidName)?;
-
-    let account = Account::insert(&db_state.pool, &account.name, auth_user.user_id).await?;
+    let account = create_account(&db_state.pool, auth_user.user_id, &account.name).await?;
     Ok(Json(account))
 }
 

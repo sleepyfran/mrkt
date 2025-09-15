@@ -1,10 +1,11 @@
 use time::OffsetDateTime;
 
-use crate::db::repos::{Pool, users_repo::UserId};
+use crate::core::db::repos::{Pool, users_repo::UserId};
 
 pub type SessionId = i64;
 pub type Token = String;
 
+#[derive(Debug)]
 pub struct Session {
     pub id: Option<SessionId>,
     /// Reference to the user who owns this session.

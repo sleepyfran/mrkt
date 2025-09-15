@@ -1,1 +1,27 @@
+pub mod accounts;
 pub mod auth;
+mod db;
+pub mod state;
+pub mod transactions;
+pub mod validators;
+
+pub use db::repos::{
+    accounts_repo::{Account, AccountId},
+    sessions_repo::{Session, SessionId, Token},
+    transactions_repo::{Transaction, TransactionId},
+    users_repo::{User, UserId},
+};
+
+/// Initializes the core application state, which creates a database connection
+/// pool, runs migrations, and returns a state that can be managed by Rocket
+/// to provide database access throughout the application.
+pub async fn init() -> state::CoreState {
+    // Start by preparing the database.
+    let pool = db::create_pool().await;
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .expect("Failed to migrate database");
+
+    state::CoreState { pool }
+}

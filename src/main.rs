@@ -1,24 +1,16 @@
-use crate::db::{create_pool, state::DbState};
-
 #[macro_use]
 extern crate rocket;
 
 mod api;
 mod core;
-mod db;
+mod site;
 
 #[launch]
 async fn rocket() -> _ {
-    // Start by preparing the database.
-    let pool = create_pool().await;
-    sqlx::migrate!("./migrations")
-        .run(&pool)
-        .await
-        .expect("Failed to migrate database");
+    let state = core::init().await;
 
     rocket::build()
-        .mount("/accounts", api::accounts::routes())
-        .mount("/transactions", api::transactions::routes())
-        .mount("/users", api::users::routes())
-        .manage(DbState { pool })
+        .mount("/api", api::routes())
+        .mount("/", site::routes())
+        .manage(state)
 }

@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
-use time::{Date, PrimitiveDateTime};
+use time::Date;
 
-use crate::db::repos::{Pool, accounts_repo::AccountId, users_repo::UserId};
+use crate::{
+    core::db::repos::{Pool, accounts_repo::AccountId, users_repo::UserId},
+    core::validators::validate_is_valid_date,
+};
 
 pub type TransactionId = i64;
 
@@ -100,5 +103,46 @@ impl Transaction {
             currency: currency.to_string(),
             fees,
         })
+    }
+
+    /// Retrieves all transactions from the database.
+    pub async fn get_all(
+        pool: &Pool,
+        belonging_to_user_id: UserId,
+    ) -> Result<Vec<Self>, sqlx::Error> {
+        let rows = sqlx::query!(
+            r#"
+                SELECT *
+                FROM transactions
+                WHERE owner_id = $1
+            "#,
+            belonging_to_user_id
+        )
+        .fetch_all(pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| {
+                let parsed_date = validate_is_valid_date(&row.transaction_date).unwrap();
+
+                Self {
+                    id: row.id,
+                    owner_id: row.owner_id,
+                    account_id: row.account_id,
+                    transaction_type: match row.transaction_type {
+                        0 => TransactionType::Buy,
+                        1 => TransactionType::Sell,
+                        _ => panic!("Invalid transaction type in database"),
+                    },
+                    transaction_date: parsed_date,
+                    ticker_symbol: row.ticker_symbol,
+                    share_quantity: row.quantity,
+                    price_per_share: row.price_per_share,
+                    currency: row.currency,
+                    fees: row.fees,
+                }
+            })
+            .collect())
     }
 }
