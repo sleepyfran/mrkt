@@ -2,6 +2,7 @@ use rocket::response::Redirect;
 
 use crate::site::auth_guard::CookieAuthenticatedUser;
 
+mod accounts;
 mod auth_guard;
 mod shared;
 mod transactions;
@@ -21,6 +22,7 @@ pub fn routes() -> Vec<rocket::Route> {
     let mut routes = Vec::new();
 
     routes.append(&mut standard_routes());
+    routes.append(&mut accounts::routes());
     routes.append(&mut transactions::routes());
     routes.append(&mut users::routes());
 

@@ -24,7 +24,6 @@ pub async fn list_all(
 ) -> Result<Markup, ListAllTransactionsError> {
     let transactions = list_all_transactions(&db_state.pool, auth_user.user_id).await?;
 
-    // Get user's accounts to display account names
     let accounts = Account::for_user(&db_state.pool, auth_user.user_id)
         .await
         .map_err(|_| ListAllTransactionsError::DatabaseError(sqlx::Error::RowNotFound))?;
@@ -147,6 +146,21 @@ pub async fn list_all(
                             div class="bg-gray-50 p-4 rounded-lg" {
                                 h4 class="text-sm font-medium text-gray-500" { "Sell Orders" }
                                 p class="text-2xl font-bold text-red-600" { (sell_count) }
+                            }
+                        }
+
+                        /* Quick navigation */
+                        div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4" {
+                            h4 class="text-sm font-medium text-blue-900 mb-2" { "Quick Actions" }
+                            div class="flex flex-wrap gap-2" {
+                                a href="/accounts"
+                                  class="inline-flex items-center px-3 py-2 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 transition duration-200" {
+                                    "Manage Accounts"
+                                }
+                                a href="/accounts/create"
+                                  class="inline-flex items-center px-3 py-2 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 transition duration-200" {
+                                    "Add Account"
+                                }
                             }
                         }
                     }
