@@ -1,0 +1,3 @@
+This folder will contain the compiled CSS output from Tailwind and potentially
+other static assets like images or fonts. Until then though, since the compiled
+CSS is ignored, keep the folder :^)

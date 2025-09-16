@@ -1,4 +1,5 @@
 mod auth_guard;
+mod shared;
 mod transactions;
 mod users;
 

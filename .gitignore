@@ -31,8 +31,11 @@ scripts/redirect.html
 # Backup files.
 *.bak
 
-# Uploads in pastebin example.
-examples/pastebin/upload/*
-
 # Production environment files
 .env
+
+# Node dependencies
+node_modules/
+
+# Dist files for the site
+static/site.css

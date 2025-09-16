@@ -6,9 +6,12 @@ use rocket::{
     response::Redirect,
 };
 
-use crate::core::{
-    auth::{LoginError, login},
-    state::CoreState,
+use crate::{
+    core::{
+        auth::{LoginError, login},
+        state::CoreState,
+    },
+    site::shared::base_template,
 };
 
 #[derive(FromForm)]
@@ -17,22 +20,56 @@ pub struct LoginForm {
     password: String,
 }
 
+/// Renders the login page.
 #[get("/login")]
 pub async fn login_page() -> Markup {
     html! {
-        h1 { "Login" }
-        form method="post" action="/login" {
-            label for="username" { "Username:" }
-            input type="text" id="username" name="username" required;
-            br;
-            label for="password" { "Password:" }
-            input type="password" id="password" name="password" required;
-            br;
-            input type="submit" value="Login";
+        (base_template())
+        body class="bg-gray-50 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" {
+            div class="max-w-md w-full space-y-8" {
+                div class="text-center" {
+                    h1 class="text-3xl font-bold text-gray-900 mb-2" { "Sign in to your account" }
+                    p class="text-sm text-gray-600" { "Welcome back to mrkt" }
+                }
+
+                form method="post" action="/login" class="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-md" {
+                    div class="space-y-4" {
+                        div {
+                            label for="username" class="block text-sm font-medium text-gray-700 mb-1" { "Username" }
+                            input
+                                type="text"
+                                id="username"
+                                name="username"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                                placeholder="Enter your username";
+                        }
+
+                        div {
+                            label for="password" class="block text-sm font-medium text-gray-700 mb-1" { "Password" }
+                            input
+                                type="password"
+                                id="password"
+                                name="password"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                                placeholder="Enter your password";
+                        }
+                    }
+
+                    div class="pt-4" {
+                        input
+                            type="submit"
+                            value="Sign in"
+                            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition duration-200";
+                    }
+                }
+            }
         }
     }
 }
 
+/// Handler for login form submission, processes the login and sets a session cookie.
 #[post("/login", data = "<form>")]
 pub async fn login_submit(
     form: Form<LoginForm>,

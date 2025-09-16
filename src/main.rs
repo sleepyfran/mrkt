@@ -1,3 +1,5 @@
+use rocket::fs::{FileServer, relative};
+
 #[macro_use]
 extern crate rocket;
 
@@ -12,5 +14,6 @@ async fn rocket() -> _ {
     rocket::build()
         .mount("/api", api::routes())
         .mount("/", site::routes())
+        .mount("/public", FileServer::from(relative!("static")))
         .manage(state)
 }
