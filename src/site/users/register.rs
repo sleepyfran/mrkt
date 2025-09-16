@@ -12,7 +12,7 @@ use crate::{
         auth::{RegisterError, register},
         state::CoreState,
     },
-    site::shared::base_template,
+    site::{auth_guard::CookieAuthenticatedUser, shared::base_template},
 };
 
 #[derive(FromForm)]
@@ -22,8 +22,15 @@ pub struct RegisterForm {
     confirm_password: String,
 }
 
-/// Renders the registration page.
+/// Redirects authenticated users away from the registration page when they are
+/// already logged in.
 #[get("/register")]
+pub async fn register_redirect(_user: CookieAuthenticatedUser<'_>) -> Redirect {
+    Redirect::to("/")
+}
+
+/// Renders the registration page.
+#[get("/register", rank = 2)]
 pub async fn register_page(flash: Option<FlashMessage<'_>>) -> Markup {
     html! {
         (base_template())

@@ -39,15 +39,10 @@ impl<'r> FromRequest<'r> for CookieAuthenticatedUser<'r> {
                         user_id: session.user_id,
                         token,
                     }),
-                    Err(err) => Outcome::Error((Status::Unauthorized, err)),
+                    Err(_) => Outcome::Forward(Status::Unauthorized),
                 }
             }
-            None => Outcome::Error((
-                Status::Unauthorized,
-                ValidateSessionTokenError::NonExistentToken(
-                    "No session_token cookie found".to_string(),
-                ),
-            )),
+            None => Outcome::Forward(Status::Unauthorized),
         }
     }
 }

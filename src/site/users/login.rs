@@ -11,7 +11,7 @@ use crate::{
         auth::{LoginError, login},
         state::CoreState,
     },
-    site::shared::base_template,
+    site::{auth_guard::CookieAuthenticatedUser, shared::base_template},
 };
 
 #[derive(FromForm)]
@@ -20,8 +20,15 @@ pub struct LoginForm {
     password: String,
 }
 
-/// Renders the login page.
+/// Redirects authenticated users away from the login page when they are already
+/// logged in.
 #[get("/login")]
+pub async fn login_redirect(_user: CookieAuthenticatedUser<'_>) -> Redirect {
+    Redirect::to("/")
+}
+
+/// Renders the login page.
+#[get("/login", rank = 2)]
 pub async fn login_page() -> Markup {
     html! {
         (base_template())
