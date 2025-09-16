@@ -8,8 +8,8 @@ mod transactions;
 mod users;
 
 #[get("/")]
-fn index(_user: CookieAuthenticatedUser) -> &'static str {
-    "Here be indexes"
+fn index(_user: CookieAuthenticatedUser) -> Redirect {
+    Redirect::to(uri!(transactions::list_all::list_all))
 }
 
 fn standard_routes() -> Vec<rocket::Route> {

@@ -1,5 +1,5 @@
-mod create;
-mod list_all;
+pub mod create;
+pub mod list_all;
 
 /// All routes related to transactions on the site.
 pub fn routes() -> Vec<rocket::Route> {
