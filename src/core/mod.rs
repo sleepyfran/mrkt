@@ -7,9 +7,8 @@ pub mod validators;
 
 pub use db::repos::{
     accounts_repo::{Account, AccountId},
-    sessions_repo::{Session, SessionId, Token},
-    transactions_repo::{Transaction, TransactionId},
-    users_repo::{User, UserId},
+    transactions_repo::{Transaction, TransactionId, TransactionType},
+    users_repo::UserId,
 };
 
 /// Initializes the core application state, which creates a database connection

@@ -54,4 +54,28 @@ impl Account {
             name: row.name,
         }))
     }
+
+    /// Returns all accounts belonging to a specific user.
+    pub async fn for_user(pool: &Pool, user_id: UserId) -> Result<Vec<Self>, DatabaseError> {
+        let rows = sqlx::query!(
+            r#"
+                SELECT *
+                FROM accounts
+                WHERE owner_id = $1
+                ORDER BY name
+            "#,
+            user_id
+        )
+        .fetch_all(pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| Account {
+                id: Some(row.id),
+                owner_id: row.owner_id,
+                name: row.name,
+            })
+            .collect())
+    }
 }
