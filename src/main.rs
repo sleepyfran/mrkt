@@ -12,8 +12,9 @@ async fn rocket() -> _ {
     let state = core::init().await;
 
     rocket::build()
-        .mount("/api", api::routes())
         .mount("/", site::routes())
+        .register("/", site::catchers())
+        .mount("/api", api::routes())
         .mount("/public", FileServer::from(relative!("static")))
         .manage(state)
 }

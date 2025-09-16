@@ -16,7 +16,7 @@ impl_responder! {
     }
 }
 
-#[get("/")]
+#[get("/transactions")]
 pub async fn list_all(
     db_state: &State<CoreState>,
     auth_user: CookieAuthenticatedUser<'_>,
