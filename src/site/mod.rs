@@ -4,13 +4,14 @@ use crate::site::auth_guard::CookieAuthenticatedUser;
 
 mod accounts;
 mod auth_guard;
+pub mod dashboard;
 mod shared;
 mod transactions;
 mod users;
 
 #[get("/")]
 fn index(_user: CookieAuthenticatedUser) -> Redirect {
-    Redirect::to(uri!(transactions::list_all::list_all))
+    Redirect::to("/dashboard")
 }
 
 fn standard_routes() -> Vec<rocket::Route> {
@@ -23,6 +24,7 @@ pub fn routes() -> Vec<rocket::Route> {
 
     routes.append(&mut standard_routes());
     routes.append(&mut accounts::routes());
+    routes.append(&mut dashboard::routes());
     routes.append(&mut transactions::routes());
     routes.append(&mut users::routes());
 

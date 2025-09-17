@@ -1,6 +1,8 @@
 pub mod accounts;
 pub mod auth;
 mod db;
+pub mod portfolio;
+pub mod shared;
 pub mod state;
 pub mod transactions;
 pub mod validators;
