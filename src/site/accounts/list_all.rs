@@ -3,11 +3,12 @@ use rocket::{State, http::Status};
 
 use crate::{
     core::{
-        state::CoreState,
+        AccountId,
         accounts::{ListAllAccountsError, list_all_accounts},
+        state::CoreState,
     },
     impl_responder,
-    site::{auth_guard::CookieAuthenticatedUser, shared::base_template},
+    site::{auth_guard::CookieAuthenticatedUser, shared::base_template, transactions},
 };
 
 impl_responder! {
@@ -35,7 +36,7 @@ pub async fn list_all(
                 div class="bg-white rounded-lg shadow-md p-6" {
                     div class="flex justify-between items-center mb-6" {
                         h2 class="text-xl font-semibold text-gray-900" { "Account List" }
-                        a href="/accounts/create" 
+                        a href="/accounts/create"
                           class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200" {
                             "Add Account"
                         }
@@ -49,7 +50,7 @@ pub async fn list_all(
                             }
                             h3 class="text-lg font-medium text-gray-900 mb-2" { "No accounts yet" }
                             p class="text-gray-500 mb-6" { "Create your first investment account to get started" }
-                            a href="/accounts/create" 
+                            a href="/accounts/create"
                               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200" {
                                 "Create Your First Account"
                             }
@@ -57,7 +58,7 @@ pub async fn list_all(
                     } @else {
                         // Calculate summary values before iterating
                         @let total_accounts = accounts.len();
-                        
+
                         div class="overflow-x-auto" {
                             table class="min-w-full divide-y divide-gray-200" {
                                 thead class="bg-gray-50" {
@@ -92,7 +93,7 @@ pub async fn list_all(
                                             }
                                             td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" {
                                                 @if let Some(id) = account.id {
-                                                    a href=(format!("/accounts/{}/transactions", id)) 
+                                                    a href=(uri!(transactions::list::list_by_account(id)))
                                                       class="text-blue-600 hover:text-blue-900 mr-4" {
                                                         "View Transactions"
                                                     }
@@ -122,11 +123,11 @@ pub async fn list_all(
                         div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4" {
                             h4 class="text-sm font-medium text-blue-900 mb-2" { "Quick Actions" }
                             div class="flex flex-wrap gap-2" {
-                                a href="/transactions" 
+                                a href="/transactions"
                                   class="inline-flex items-center px-3 py-2 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 transition duration-200" {
                                     "View All Transactions"
                                 }
-                                a href="/transactions/create" 
+                                a href="/transactions/create"
                                   class="inline-flex items-center px-3 py-2 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 transition duration-200" {
                                     "Add Transaction"
                                 }

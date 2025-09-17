@@ -145,4 +145,48 @@ impl Transaction {
             })
             .collect())
     }
+
+    /// Retrieves all transactions for a specific account.
+    pub async fn get_by_account(
+        pool: &Pool,
+        belonging_to_user_id: UserId,
+        account_id: AccountId,
+    ) -> Result<Vec<Self>, sqlx::Error> {
+        let rows = sqlx::query!(
+            r#"
+                SELECT *
+                FROM transactions
+                WHERE owner_id = $1 AND account_id = $2
+                ORDER BY transaction_date DESC
+            "#,
+            belonging_to_user_id,
+            account_id
+        )
+        .fetch_all(pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| {
+                let parsed_date = validate_is_valid_date(&row.transaction_date).unwrap();
+
+                Self {
+                    id: row.id,
+                    owner_id: row.owner_id,
+                    account_id: row.account_id,
+                    transaction_type: match row.transaction_type {
+                        0 => TransactionType::Buy,
+                        1 => TransactionType::Sell,
+                        _ => panic!("Invalid transaction type in database"),
+                    },
+                    transaction_date: parsed_date,
+                    ticker_symbol: row.ticker_symbol,
+                    share_quantity: row.quantity,
+                    price_per_share: row.price_per_share,
+                    currency: row.currency,
+                    fees: row.fees,
+                }
+            })
+            .collect())
+    }
 }

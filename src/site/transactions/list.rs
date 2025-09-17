@@ -3,9 +3,12 @@ use rocket::{State, http::Status};
 
 use crate::{
     core::{
-        Account, TransactionType,
+        Account, AccountId, Transaction, TransactionType,
         state::CoreState,
-        transactions::{ListAllTransactionsError, list_all_transactions},
+        transactions::{
+            ListAllTransactionsError, ListByAccountTransactionsError, list_all_transactions,
+            list_transactions_by_account,
+        },
     },
     impl_responder,
     site::{auth_guard::CookieAuthenticatedUser, shared::base_template},
@@ -17,24 +20,26 @@ impl_responder! {
     }
 }
 
-#[get("/transactions")]
-pub async fn list_all(
-    db_state: &State<CoreState>,
-    auth_user: CookieAuthenticatedUser<'_>,
-) -> Result<Markup, ListAllTransactionsError> {
-    let transactions = list_all_transactions(&db_state.pool, auth_user.user_id).await?;
+impl_responder! {
+    ListByAccountTransactionsError {
+        ListByAccountTransactionsError::DatabaseError(_) => Status::InternalServerError,
+    }
+}
 
-    let accounts = Account::for_user(&db_state.pool, auth_user.user_id)
-        .await
-        .map_err(|_| ListAllTransactionsError::DatabaseError(sqlx::Error::RowNotFound))?;
-
-    Ok(html! {
+/// Renders the transactions template with the provided transactions and accounts
+fn render_transactions(
+    transactions: &[Transaction],
+    accounts: &[Account],
+    page_title: &str,
+    page_subtitle: &str,
+) -> Markup {
+    html! {
         (base_template())
         body class="bg-gray-50 min-h-screen py-12 px-4 sm:px-6 lg:px-8" {
             div class="max-w-4xl mx-auto" {
                 div class="text-center mb-8" {
-                    h1 class="text-3xl font-bold text-gray-900 mb-2" { "Your Transactions" }
-                    p class="text-sm text-gray-600" { "View and manage your stock transactions" }
+                    h1 class="text-3xl font-bold text-gray-900 mb-2" { (page_title) }
+                    p class="text-sm text-gray-600" { (page_subtitle) }
                 }
 
                 div class="bg-white rounded-lg shadow-md p-6" {
@@ -80,7 +85,7 @@ pub async fn list_all(
                                     }
                                 }
                                 tbody class="bg-white divide-y divide-gray-200" {
-                                    @for transaction in &transactions {
+                                    @for transaction in transactions {
                                         tr class="hover:bg-gray-50 transition duration-200" {
                                             td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" {
                                                 (transaction.transaction_date)
@@ -167,5 +172,64 @@ pub async fn list_all(
                 }
             }
         }
-    })
+    }
+}
+
+#[get("/transactions")]
+pub async fn list_all(
+    db_state: &State<CoreState>,
+    auth_user: CookieAuthenticatedUser<'_>,
+) -> Result<Markup, ListAllTransactionsError> {
+    let transactions = list_all_transactions(&db_state.pool, auth_user.user_id).await?;
+
+    let accounts = Account::for_user(&db_state.pool, auth_user.user_id)
+        .await
+        .map_err(|_| ListAllTransactionsError::DatabaseError(sqlx::Error::RowNotFound))?;
+
+    Ok(render_transactions(
+        &transactions,
+        &accounts,
+        "Your Transactions",
+        "View and manage your stock transactions",
+    ))
+}
+
+#[get("/transactions/<account_id>")]
+pub async fn list_by_account(
+    account_id: AccountId,
+    db_state: &State<CoreState>,
+    auth_user: CookieAuthenticatedUser<'_>,
+) -> Result<Markup, ListByAccountTransactionsError> {
+    // Verify that the account belongs to the user
+    let account = Account::by_id(&db_state.pool, account_id)
+        .await
+        .map_err(|_| ListByAccountTransactionsError::DatabaseError(sqlx::Error::RowNotFound))?;
+
+    if let Some(account) = &account {
+        if account.owner_id != auth_user.user_id {
+            return Err(ListByAccountTransactionsError::DatabaseError(
+                sqlx::Error::RowNotFound,
+            ));
+        }
+    } else {
+        return Err(ListByAccountTransactionsError::DatabaseError(
+            sqlx::Error::RowNotFound,
+        ));
+    }
+
+    let transactions =
+        list_transactions_by_account(&db_state.pool, auth_user.user_id, account_id).await?;
+
+    let accounts = Account::for_user(&db_state.pool, auth_user.user_id)
+        .await
+        .map_err(|_| ListByAccountTransactionsError::DatabaseError(sqlx::Error::RowNotFound))?;
+
+    let account_name = account.as_ref().unwrap().name.clone();
+
+    Ok(render_transactions(
+        &transactions,
+        &accounts,
+        &format!("Transactions for {}", account_name),
+        &format!("View transactions for the {} account", account_name),
+    ))
 }
