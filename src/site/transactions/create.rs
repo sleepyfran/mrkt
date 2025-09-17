@@ -51,16 +51,25 @@ pub async fn create_page(
                     div class="space-y-4" {
                         div {
                             label for="account_id" class="block text-sm font-medium text-gray-700 mb-1" { "Account" }
-                            select
-                                id="account_id"
-                                name="account_id"
-                                required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" {
-                                    option value="" disabled selected { "Select an account" }
-                                    @for account in accounts {
-                                        option value=(account.id.unwrap_or(0)) { (account.name) }
+                            @if accounts.is_empty() {
+                                div class="text-center p-6 bg-gray-50 border border-gray-300 rounded-md" {
+                                    p class="text-gray-600 mb-4" { "You don't have any accounts yet." }
+                                    a href="/accounts/create" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200" {
+                                        "Create Your First Account"
                                     }
                                 }
+                            } @else {
+                                select
+                                    id="account_id"
+                                    name="account_id"
+                                    required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" {
+                                        option value="" disabled selected { "Select an account" }
+                                        @for account in accounts {
+                                            option value=(account.id.unwrap_or(0)) { (account.name) }
+                                        }
+                                    }
+                            }
                         }
 
                         div {
