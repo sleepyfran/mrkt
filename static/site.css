@@ -402,3 +402,194 @@ alert a:hover {
         gap: 1rem;
     }
 }
+
+/* == TABLE COMPONENTS == */
+
+/* Section Controls - Header section with actions */
+section-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border-primary);
+}
+
+section-controls h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+section-controls a {
+    background-color: var(--color-button-primary);
+    color: var(--color-button-text-on-primary);
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+section-controls a:hover {
+    background-color: var(--color-button-primary-hover);
+}
+
+/* Table Container */
+table-container {
+    display: block;
+    background: var(--color-background-surface);
+    border: 1px solid var(--color-border-primary);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+/* Table */
+table[data-table="content"] {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--color-background-surface);
+}
+
+table[data-table="content"] thead {
+    background: var(--color-background-muted);
+    border-bottom: 2px solid var(--color-border-primary);
+}
+
+table[data-table="content"] th {
+    padding: 1rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+table[data-table="content"] tbody tr {
+    border-bottom: 1px solid var(--color-border-primary);
+    transition: background-color 0.2s ease;
+}
+
+table[data-table="content"] tbody tr:hover {
+    background-color: var(--color-background-muted);
+}
+
+table[data-table="content"] tbody tr:last-child {
+    border-bottom: none;
+}
+
+table[data-table="content"] td {
+    padding: 1rem 0.75rem;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+}
+
+/* Badge Components */
+status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+status-badge[data-variant="primary"] {
+    background-color: var(--color-accent-primary);
+    color: white;
+}
+
+status-badge[data-variant="danger"] {
+    background-color: var(--color-accent-danger);
+    color: white;
+}
+
+status-badge[data-variant="secondary"] {
+    background-color: var(--color-accent-secondary);
+    color: white;
+}
+
+/* Summary Cards */
+summary-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border: 1px solid var(--color-border-primary);
+    border-radius: 8px;
+    background: var(--color-background-surface);
+}
+
+summary-section > div {
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+}
+
+summary-section h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+summary-section p {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+/* Table Responsive Design */
+@media (max-width: 768px) {
+    section-controls {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    section-controls a {
+        width: 100%;
+        text-align: center;
+    }
+
+    table-container {
+        overflow-x: auto;
+    }
+
+    table[data-table="content"] {
+        min-width: 800px;
+    }
+
+    summary-section {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    summary-section > div {
+        text-align: left;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--color-border-primary);
+    }
+
+    summary-section > div:last-child {
+        border-bottom: none;
+    }
+}
+
+@media (max-width: 480px) {
+    summary-section {
+        padding: 1rem;
+    }
+
+    table[data-table="content"] th,
+    table[data-table="content"] td {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+}

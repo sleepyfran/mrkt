@@ -13,7 +13,7 @@ use crate::{
     impl_responder,
     site::{
         auth_guard::CookieAuthenticatedUser,
-        shared::{NavSection, Shell},
+        shared::{NavSection, Shell, empty_state},
     },
 };
 
@@ -45,31 +45,28 @@ fn render_transactions(
                         page-header-subtitle { (page_subtitle) }
                     }
 
-                    div class="transaction-controls" {
-                        h2 { "Transaction History" }
-                        a href="/transactions/create" {
-                            "Add Transaction"
-                        }
-                    }
-
                     @if transactions.is_empty() {
-                        div class="transactions-empty-state" {
-                            div class="transactions-empty-state-icon" {
-                                "📊"
-                            }
-                            h3 { "No transactions yet" }
-                            p { "Get started by adding your first stock transaction" }
-                            a href="/transactions/create" {
-                                "Add Your First Transaction"
-                            }
-                        }
+                        (empty_state(
+                            "📊",
+                            "No transactions yet",
+                            "Get started by adding your first stock transaction",
+                            "Add Your First Transaction",
+                            "/transactions/create"
+                        ))
                     } @else {
                         // Calculate summary values before iterating
                         @let total_transactions = transactions.len();
                         @let buy_count = transactions.iter().filter(|t| matches!(t.transaction_type, TransactionType::Buy)).count();
                         @let sell_count = transactions.iter().filter(|t| matches!(t.transaction_type, TransactionType::Sell)).count();
 
-                        div class="transaction-summary" {
+                        section-controls {
+                            h2 { "Transaction History" }
+                            a href="/transactions/create" {
+                                "Add Transaction"
+                            }
+                        }
+
+                        summary-section {
                             div {
                                 h4 { "Total Transactions" }
                                 p { (total_transactions) }
@@ -84,8 +81,8 @@ fn render_transactions(
                             }
                         }
 
-                        div class="transaction-table-container" {
-                            table class="transaction-table" {
+                        table-container {
+                            table data-table="content" {
                                 thead {
                                     tr {
                                         th { "Date" }
@@ -107,12 +104,12 @@ fn render_transactions(
                                             td {
                                                 @match transaction.transaction_type {
                                                     TransactionType::Buy => {
-                                                        span class="transaction-type-buy" {
+                                                        status-badge data-variant="primary" {
                                                             "Buy"
                                                         }
                                                     }
                                                     TransactionType::Sell => {
-                                                        span class="transaction-type-sell" {
+                                                        status-badge data-variant="danger" {
                                                             "Sell"
                                                         }
                                                     }
