@@ -1,0 +1,450 @@
+use crate::core::data_sources::market_provider::{
+    DailyStockPrice, ExchangeRate, MarketDataError, MarketDataResult, MarketProvider,
+    StockPriceData, SymbolSearchResult,
+};
+use reqwest::Client;
+use serde::Deserialize;
+use std::collections::HashMap;
+use time::{Date, OffsetDateTime, PrimitiveDateTime, Time};
+use url::Url;
+
+/// AlphaVantage API provider implementation.
+pub struct AlphaVantageProvider {
+    api_key: String,
+    client: Client,
+    base_url: String,
+}
+
+impl AlphaVantageProvider {
+    /// Create a new AlphaVantage provider with the given API key.
+    pub fn new(api_key: String) -> Self {
+        Self {
+            api_key,
+            client: Client::new(),
+            base_url: "https://www.alphavantage.co/query".to_string(),
+        }
+    }
+
+    /// Build a URL for the AlphaVantage API with the given parameters.
+    fn build_url(&self, params: &[(&str, &str)]) -> Result<Url, MarketDataError> {
+        let mut url = Url::parse(&self.base_url)
+            .map_err(|e| MarketDataError::Network(format!("Invalid base URL: {}", e)))?;
+
+        {
+            let mut query_pairs = url.query_pairs_mut();
+            for (key, value) in params {
+                query_pairs.append_pair(key, value);
+            }
+            query_pairs.append_pair("apikey", &self.api_key);
+        }
+
+        Ok(url)
+    }
+
+    /// Parse a date string from AlphaVantage format (YYYY-MM-DD) to OffsetDateTime.
+    fn parse_date(date_str: &str) -> Result<OffsetDateTime, MarketDataError> {
+        let format = time::format_description::parse("[year]-[month]-[day]")
+            .map_err(|e| MarketDataError::Parsing(format!("Invalid format description: {}", e)))?;
+
+        let date = Date::parse(date_str, &format).map_err(|e| {
+            MarketDataError::Parsing(format!("Invalid date format '{}': {}", date_str, e))
+        })?;
+
+        let time = Time::MIDNIGHT;
+        let datetime = PrimitiveDateTime::new(date, time);
+        Ok(datetime.assume_utc())
+    }
+
+    /// Parse a timestamp string from AlphaVantage format to OffsetDateTime.
+    fn parse_timestamp(timestamp_str: &str) -> Result<OffsetDateTime, MarketDataError> {
+        // AlphaVantage uses different timestamp formats, handle the most common ones.
+        let datetime_format =
+            time::format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]")
+                .map_err(|e| {
+                    MarketDataError::Parsing(format!("Invalid format description: {}", e))
+                })?;
+
+        // Try parsing as a datetime with seconds (without timezone info, assume UTC).
+        if let Ok(datetime) = PrimitiveDateTime::parse(timestamp_str, &datetime_format) {
+            Ok(datetime.assume_utc())
+        } else if let Ok(datetime) = Self::parse_date(timestamp_str) {
+            Ok(datetime)
+        } else {
+            Err(MarketDataError::Parsing(format!(
+                "Unable to parse timestamp: {}",
+                timestamp_str
+            )))
+        }
+    }
+}
+
+// AlphaVantage API response structures.
+#[derive(Debug, Deserialize)]
+struct AlphaVantageExchangeRateResponse {
+    #[serde(rename = "Realtime Currency Exchange Rate")]
+    exchange_rate: AlphaVantageExchangeRate,
+}
+
+#[derive(Debug, Deserialize)]
+struct AlphaVantageExchangeRate {
+    #[serde(rename = "1. From_Currency Code")]
+    from_currency: String,
+    #[serde(rename = "2. From_Currency Name")]
+    from_currency_name: String,
+    #[serde(rename = "3. To_Currency Code")]
+    to_currency: String,
+    #[serde(rename = "4. To_Currency Name")]
+    to_currency_name: String,
+    #[serde(rename = "5. Exchange Rate")]
+    exchange_rate: String,
+    #[serde(rename = "6. Last Refreshed")]
+    last_refreshed: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct AlphaVantageTimeSeriesResponse {
+    #[serde(rename = "Meta Data")]
+    meta_data: AlphaVantageMetaData,
+    #[serde(rename = "Time Series (Daily)")]
+    time_series: HashMap<String, AlphaVantageDailyData>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AlphaVantageMetaData {
+    #[serde(rename = "1. Information")]
+    information: String,
+    #[serde(rename = "2. Symbol")]
+    symbol: String,
+    #[serde(rename = "3. Last Refreshed")]
+    last_refreshed: String,
+    #[serde(rename = "4. Output Size")]
+    output_size: String,
+    #[serde(rename = "5. Time Zone")]
+    time_zone: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct AlphaVantageDailyData {
+    #[serde(rename = "1. open")]
+    open: String,
+    #[serde(rename = "2. high")]
+    high: String,
+    #[serde(rename = "3. low")]
+    low: String,
+    #[serde(rename = "4. close")]
+    close: String,
+    #[serde(rename = "5. volume")]
+    volume: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct AlphaVantageSearchResponse {
+    #[serde(rename = "bestMatches")]
+    best_matches: Vec<AlphaVantageSearchMatch>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AlphaVantageSearchMatch {
+    #[serde(rename = "1. symbol")]
+    symbol: String,
+    #[serde(rename = "2. name")]
+    name: String,
+    #[serde(rename = "3. type")]
+    symbol_type: String,
+    #[serde(rename = "4. region")]
+    region: String,
+    #[serde(rename = "5. marketOpen")]
+    market_open: String,
+    #[serde(rename = "6. marketClose")]
+    market_close: String,
+    #[serde(rename = "7. timezone")]
+    timezone: String,
+    #[serde(rename = "8. currency")]
+    currency: String,
+    #[serde(rename = "9. matchScore")]
+    match_score: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct AlphaVantageErrorResponse {
+    #[serde(rename = "Error Message")]
+    error_message: Option<String>,
+    #[serde(rename = "Note")]
+    note: Option<String>,
+}
+
+impl From<reqwest::Error> for MarketDataError {
+    fn from(error: reqwest::Error) -> Self {
+        if error.is_timeout() {
+            MarketDataError::Network("Request timeout".to_string())
+        } else if error.is_connect() {
+            MarketDataError::Network("Connection error".to_string())
+        } else {
+            MarketDataError::Network(error.to_string())
+        }
+    }
+}
+
+impl From<url::ParseError> for MarketDataError {
+    fn from(error: url::ParseError) -> Self {
+        MarketDataError::Network(format!("URL parse error: {}", error))
+    }
+}
+
+impl From<time::error::Parse> for MarketDataError {
+    fn from(error: time::error::Parse) -> Self {
+        MarketDataError::Parsing(format!("Time parse error: {}", error))
+    }
+}
+
+impl From<time::error::InvalidFormatDescription> for MarketDataError {
+    fn from(error: time::error::InvalidFormatDescription) -> Self {
+        MarketDataError::Parsing(format!("Invalid time format description: {}", error))
+    }
+}
+
+#[async_trait::async_trait]
+impl MarketProvider for AlphaVantageProvider {
+    async fn get_exchange_rate(
+        &self,
+        from_currency: &str,
+        to_currency: &str,
+    ) -> MarketDataResult<ExchangeRate> {
+        let params = [
+            ("function", "CURRENCY_EXCHANGE_RATE"),
+            ("from_currency", from_currency),
+            ("to_currency", to_currency),
+        ];
+
+        let url = self.build_url(&params)?;
+        let response = self.client.get(url).send().await?;
+
+        if !response.status().is_success() {
+            return Err(MarketDataError::Api(format!(
+                "HTTP error: {}",
+                response.status()
+            )));
+        }
+
+        let response_text = response.text().await?;
+
+        // Check for error response first
+        if let Ok(error_response) =
+            serde_json::from_str::<AlphaVantageErrorResponse>(&response_text)
+        {
+            if let Some(error_msg) = error_response.error_message {
+                return Err(MarketDataError::Api(error_msg));
+            }
+            if let Some(note) = error_response.note {
+                if note.contains("rate limit") || note.contains("frequency") {
+                    return Err(MarketDataError::RateLimit);
+                }
+                return Err(MarketDataError::Api(note));
+            }
+        }
+
+        let response_data: AlphaVantageExchangeRateResponse = serde_json::from_str(&response_text)
+            .map_err(|e| MarketDataError::Parsing(format!("JSON parse error: {}", e)))?;
+
+        let rate = response_data
+            .exchange_rate
+            .exchange_rate
+            .parse::<f64>()
+            .map_err(|e| MarketDataError::Parsing(format!("Invalid exchange rate: {}", e)))?;
+
+        let last_refreshed = Self::parse_timestamp(&response_data.exchange_rate.last_refreshed)?;
+
+        Ok(ExchangeRate {
+            from_currency: response_data.exchange_rate.from_currency,
+            to_currency: response_data.exchange_rate.to_currency,
+            rate,
+            last_refreshed,
+        })
+    }
+
+    async fn get_stock_prices(&self, symbol: &str) -> MarketDataResult<StockPriceData> {
+        let params = [
+            ("function", "TIME_SERIES_DAILY"),
+            ("symbol", symbol),
+            ("outputsize", "compact"), // Get latest 100 data points.
+        ];
+
+        let url = self.build_url(&params)?;
+        let response = self.client.get(url).send().await?;
+
+        if !response.status().is_success() {
+            return Err(MarketDataError::Api(format!(
+                "HTTP error: {}",
+                response.status()
+            )));
+        }
+
+        let response_text = response.text().await?;
+
+        // Check for error response first
+        if let Ok(error_response) =
+            serde_json::from_str::<AlphaVantageErrorResponse>(&response_text)
+        {
+            if let Some(error_msg) = error_response.error_message {
+                return Err(MarketDataError::InvalidSymbol(error_msg));
+            }
+            if let Some(note) = error_response.note {
+                if note.contains("rate limit") || note.contains("frequency") {
+                    return Err(MarketDataError::RateLimit);
+                }
+                return Err(MarketDataError::Api(note));
+            }
+        }
+
+        let response_data: AlphaVantageTimeSeriesResponse = serde_json::from_str(&response_text)
+            .map_err(|e| MarketDataError::Parsing(format!("JSON parse error: {}", e)))?;
+
+        let mut daily_prices = HashMap::new();
+
+        for (date_str, daily_data) in response_data.time_series {
+            let date = Self::parse_date(&date_str)?;
+
+            let open = daily_data
+                .open
+                .parse::<f64>()
+                .map_err(|e| MarketDataError::Parsing(format!("Invalid open price: {}", e)))?;
+            let high = daily_data
+                .high
+                .parse::<f64>()
+                .map_err(|e| MarketDataError::Parsing(format!("Invalid high price: {}", e)))?;
+            let low = daily_data
+                .low
+                .parse::<f64>()
+                .map_err(|e| MarketDataError::Parsing(format!("Invalid low price: {}", e)))?;
+            let close = daily_data
+                .close
+                .parse::<f64>()
+                .map_err(|e| MarketDataError::Parsing(format!("Invalid close price: {}", e)))?;
+            let volume = daily_data
+                .volume
+                .parse::<u64>()
+                .map_err(|e| MarketDataError::Parsing(format!("Invalid volume: {}", e)))?;
+
+            daily_prices.insert(
+                date_str,
+                DailyStockPrice {
+                    date,
+                    open,
+                    close,
+                    high,
+                    low,
+                    volume,
+                },
+            );
+        }
+
+        if daily_prices.is_empty() {
+            return Err(MarketDataError::NoData);
+        }
+
+        let last_refreshed = Self::parse_timestamp(&response_data.meta_data.last_refreshed)?;
+
+        Ok(StockPriceData {
+            symbol: response_data.meta_data.symbol,
+            currency: "USD".to_string(), // AlphaVantage doesn't always provide currency info.
+            daily_prices,
+            last_refreshed,
+        })
+    }
+
+    async fn search_symbols(&self, keywords: &str) -> MarketDataResult<Vec<SymbolSearchResult>> {
+        let params = [("function", "SYMBOL_SEARCH"), ("keywords", keywords)];
+
+        let url = self.build_url(&params)?;
+        let response = self.client.get(url).send().await?;
+
+        if !response.status().is_success() {
+            return Err(MarketDataError::Api(format!(
+                "HTTP error: {}",
+                response.status()
+            )));
+        }
+
+        let response_text = response.text().await?;
+
+        // Check for error response first
+        if let Ok(error_response) =
+            serde_json::from_str::<AlphaVantageErrorResponse>(&response_text)
+        {
+            if let Some(error_msg) = error_response.error_message {
+                return Err(MarketDataError::Api(error_msg));
+            }
+            if let Some(note) = error_response.note {
+                if note.contains("rate limit") || note.contains("frequency") {
+                    return Err(MarketDataError::RateLimit);
+                }
+                return Err(MarketDataError::Api(note));
+            }
+        }
+
+        let response_data: AlphaVantageSearchResponse = serde_json::from_str(&response_text)
+            .map_err(|e| MarketDataError::Parsing(format!("JSON parse error: {}", e)))?;
+
+        let mut results = Vec::new();
+
+        for search_match in response_data.best_matches {
+            let match_score = search_match
+                .match_score
+                .parse::<f64>()
+                .map_err(|e| MarketDataError::Parsing(format!("Invalid match score: {}", e)))?;
+
+            results.push(SymbolSearchResult {
+                symbol: search_match.symbol,
+                name: search_match.name,
+                currency: search_match.currency,
+                match_score,
+            });
+        }
+
+        Ok(results)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_provider_creation() {
+        let provider = AlphaVantageProvider::new("test_api_key".to_string());
+        assert_eq!(provider.api_key, "test_api_key");
+        assert_eq!(provider.base_url, "https://www.alphavantage.co/query");
+    }
+
+    #[test]
+    fn test_date_parsing() {
+        let result = AlphaVantageProvider::parse_date("2023-12-25");
+        assert!(result.is_ok());
+
+        let bad_result = AlphaVantageProvider::parse_date("invalid-date");
+        assert!(bad_result.is_err());
+    }
+
+    #[test]
+    fn test_timestamp_parsing() {
+        let result = AlphaVantageProvider::parse_timestamp("2023-12-25 15:30:45");
+        assert!(result.is_ok());
+
+        let date_result = AlphaVantageProvider::parse_timestamp("2023-12-25");
+        assert!(date_result.is_ok());
+
+        let bad_result = AlphaVantageProvider::parse_timestamp("invalid-timestamp");
+        assert!(bad_result.is_err());
+    }
+
+    #[test]
+    fn test_url_building() {
+        let provider = AlphaVantageProvider::new("test_key".to_string());
+        let params = [("function", "TEST"), ("symbol", "IBM")];
+        let url = provider.build_url(&params).unwrap();
+
+        assert!(url.as_str().contains("function=TEST"));
+        assert!(url.as_str().contains("symbol=IBM"));
+        assert!(url.as_str().contains("apikey=test_key"));
+    }
+}

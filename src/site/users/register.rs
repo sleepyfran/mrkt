@@ -41,7 +41,7 @@ pub async fn register_page(flash: Option<FlashMessage<'_>>) -> Markup {
                 form-container {
                     page-header {
                         page-header-title { "Create your account" }
-                        page-header-subtitle { "Join mrkt to start tracking your investments" }
+                        page-header-subtitle { "Join mrkt and start tracking your investments" }
                     }
 
                     @match flash {

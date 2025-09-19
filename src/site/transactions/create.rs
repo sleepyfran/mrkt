@@ -9,6 +9,7 @@ use rocket::{
 use crate::{
     core::{
         Account, AccountId, TransactionType,
+        data_sources::currencies,
         state::CoreState,
         transactions::{CreateTransactionError, TransactionData, create_transaction},
     },
@@ -131,13 +132,19 @@ pub async fn create_page(
                             form-row {
                                 form-field {
                                     label for="currency" { "Currency" }
-                                    input
-                                        type="text"
+                                    select
                                         id="currency"
                                         name="currency"
-                                        value="USD"
-                                        required
-                                        placeholder="USD";
+                                        required {
+                                            @for code in currencies::get_currency_codes() {
+                                                // TODO: Make configurable through an environment variable.
+                                                @if code == "EUR" {
+                                                    option value=(code) selected { (code) }
+                                                } @else {
+                                                    option value=(code) { (code) }
+                                                }
+                                            }
+                                        }
                                 }
 
                                 form-field {

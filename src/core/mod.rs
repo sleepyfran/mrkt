@@ -1,5 +1,6 @@
 pub mod accounts;
 pub mod auth;
+pub mod data_sources;
 mod db;
 pub mod portfolio;
 pub mod shared;
@@ -24,5 +25,11 @@ pub async fn init() -> state::CoreState {
         .await
         .expect("Failed to migrate database");
 
-    state::CoreState { pool }
+    // Next, set up the market data provider.
+    let market_provider = data_sources::create_market_provider();
+
+    state::CoreState {
+        pool,
+        market_provider,
+    }
 }
