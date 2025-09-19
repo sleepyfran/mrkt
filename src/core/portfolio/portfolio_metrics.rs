@@ -1,6 +1,9 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
+use time::OffsetDateTime;
 
-use crate::core::{Account, Transaction, TransactionType, shared::Amount};
+use crate::core::{
+    Account, Transaction, TransactionType, data_sources::MarketProvider, shared::Amount,
+};
 
 // Type aliases for better code readability
 type ShareQuantity = Amount;
@@ -21,6 +24,9 @@ pub struct PortfolioMetrics {
     pub unique_stocks: usize,
     pub portfolio_breakdown: Vec<StockPosition>,
     pub account_breakdown: Vec<AccountSummary>,
+    /// The timestamp when portfolio values were last updated from market data.
+    /// None if all values are based on historical cost (no market data available).
+    pub last_updated: Option<OffsetDateTime>,
 }
 
 #[derive(Debug)]
@@ -29,9 +35,13 @@ pub struct StockPosition {
     pub shares: Amount,
     pub average_cost: Amount,
     pub total_invested: Amount,
-    // TODO: Integrate with market data for real current value.
+    /// Current market value using real-time data from the market provider.
+    /// Falls back to average cost if market data is unavailable.
     pub current_value: Amount,
     pub percentage_of_portfolio: f64,
+    /// The timestamp when this stock's price was last updated from market data.
+    /// None if using historical cost (market data unavailable).
+    pub last_updated: Option<OffsetDateTime>,
 }
 
 #[derive(Debug)]
@@ -44,14 +54,18 @@ pub struct AccountSummary {
 
 impl PortfolioMetrics {
     /// Calculates portfolio metrics from transactions and accounts.
-    pub fn from(transactions: &[Transaction], accounts: &[Account]) -> Self {
+    pub async fn from(
+        transactions: &[Transaction],
+        accounts: &[Account],
+        market_provider: Arc<dyn MarketProvider>,
+    ) -> Self {
         let (stock_positions, account_values, total_invested, total_fees) =
             Self::process_transactions(transactions);
 
         let transaction_counts = Self::count_transactions(transactions);
 
-        let (portfolio_breakdown, total_current_value) =
-            Self::build_portfolio_breakdown(stock_positions);
+        let (portfolio_breakdown, total_current_value, portfolio_last_updated) =
+            Self::build_portfolio_breakdown(stock_positions, market_provider).await;
 
         let account_breakdown = Self::build_account_breakdown(
             accounts,
@@ -75,6 +89,7 @@ impl PortfolioMetrics {
             unique_stocks: portfolio_breakdown.len(),
             portfolio_breakdown,
             account_breakdown,
+            last_updated: portfolio_last_updated,
         }
     }
 
@@ -136,17 +151,49 @@ impl PortfolioMetrics {
     }
 
     /// Builds portfolio breakdown from stock positions.
-    fn build_portfolio_breakdown(
+    async fn build_portfolio_breakdown(
         stock_positions: HashMap<String, StockData>,
-    ) -> (Vec<StockPosition>, Amount) {
+        market_provider: Arc<dyn MarketProvider>,
+    ) -> (Vec<StockPosition>, Amount, Option<OffsetDateTime>) {
         let mut portfolio_breakdown = Vec::new();
         let mut total_current_value = 0.0;
+        let mut earliest_update: Option<OffsetDateTime> = None;
 
         for (ticker, (shares, total_cost, _fees)) in &stock_positions {
             if *shares > 0.0 {
                 let average_cost = total_cost / shares;
-                // TODO: Fetch market data for this, for now, use average cost as current price.
-                let current_value = shares * average_cost;
+                let mut stock_last_updated: Option<OffsetDateTime> = None;
+
+                // Try to fetch current market price, fall back to average cost if unavailable
+                let current_price = match market_provider.get_stock_prices(ticker).await {
+                    Ok(stock_data) => {
+                        stock_last_updated = Some(stock_data.last_refreshed);
+
+                        // Update earliest_update to track the oldest data in the portfolio
+                        match earliest_update {
+                            None => earliest_update = Some(stock_data.last_refreshed),
+                            Some(current_earliest) => {
+                                if stock_data.last_refreshed < current_earliest {
+                                    earliest_update = Some(stock_data.last_refreshed);
+                                }
+                            }
+                        }
+
+                        // Get the most recent price from daily prices
+                        stock_data
+                            .daily_prices
+                            .values()
+                            .max_by_key(|price| price.date)
+                            .map(|price| price.close)
+                            .unwrap_or(average_cost)
+                    }
+                    Err(_) => {
+                        // Fall back to average cost if market data is unavailable
+                        average_cost
+                    }
+                };
+
+                let current_value = shares * current_price;
                 total_current_value += current_value;
 
                 portfolio_breakdown.push(StockPosition {
@@ -156,6 +203,7 @@ impl PortfolioMetrics {
                     total_invested: *total_cost,
                     current_value,
                     percentage_of_portfolio: 0.0,
+                    last_updated: stock_last_updated,
                 });
             }
         }
@@ -172,7 +220,7 @@ impl PortfolioMetrics {
         // Sort by value (largest holdings first).
         portfolio_breakdown.sort_by(|a, b| b.current_value.partial_cmp(&a.current_value).unwrap());
 
-        (portfolio_breakdown, total_current_value)
+        (portfolio_breakdown, total_current_value, earliest_update)
     }
 
     /// Builds an account breakdown from account values and transactions.

@@ -1,5 +1,6 @@
 use maud::{Markup, html};
 use rocket::State;
+use time::OffsetDateTime;
 
 use crate::{
     core::{
@@ -24,7 +25,8 @@ pub async fn dashboard(
         .await
         .map_err(|_| ListAllTransactionsError::DatabaseError(sqlx::Error::RowNotFound))?;
 
-    let metrics = PortfolioMetrics::from(&transactions, &accounts);
+    let metrics =
+        PortfolioMetrics::from(&transactions, &accounts, db_state.market_provider.clone()).await;
 
     Ok(html! {
         (
@@ -54,6 +56,27 @@ pub async fn dashboard(
     })
 }
 
+fn format_last_update(last_updated: Option<OffsetDateTime>) -> String {
+    match last_updated {
+        Some(timestamp) => {
+            // Calculate time difference from now for a more human-readable format
+            let now = OffsetDateTime::now_utc();
+            let diff = now - timestamp;
+
+            if diff.whole_minutes() < 1 {
+                "Last updated: Just now".to_string()
+            } else if diff.whole_minutes() < 60 {
+                format!("Last updated: {} minutes ago", diff.whole_minutes())
+            } else if diff.whole_hours() < 24 {
+                format!("Last updated: {} hours ago", diff.whole_hours())
+            } else {
+                format!("Last updated: {} days ago", diff.whole_days())
+            }
+        }
+        None => "Using historical cost data".to_string(),
+    }
+}
+
 fn portfolio_value(metrics: &PortfolioMetrics) -> Markup {
     html! {
         div class="" {
@@ -61,7 +84,7 @@ fn portfolio_value(metrics: &PortfolioMetrics) -> Markup {
             p class="" {
                 (format!("${:.2}", metrics.total_portfolio_value))
             }
-            p class="" { "Current estimated value" }
+            p class="last-updated" { (format_last_update(metrics.last_updated)) }
         }
     }
 }
@@ -156,6 +179,7 @@ fn current_holdings(metrics: &PortfolioMetrics) -> Markup {
                                     p {
                                         (format!("{:.4} shares @ ${:.2} avg", position.shares, position.average_cost))
                                     }
+                                    p class="last-updated" { (format_last_update(position.last_updated)) }
                                 }
                                 div {
                                     p {
