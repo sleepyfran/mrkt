@@ -26,39 +26,37 @@ pub struct AccountForm {
 pub async fn create_page() -> Markup {
     html! {
         (Shell::create(
-            NavSection::UserManagement,
-            "Register",
+            NavSection::Accounts,
+            "Create Account",
             html! {
-                div class="" {
-                    div class="" {
-                        h1 class="" { "Create New Account" }
-                        p class="" { "Add a new investment account" }
+                form-container {
+                    page-header {
+                        page-header-title { "Create New Account" }
+                        page-header-subtitle { "Add a new investment account" }
                     }
 
-                    form method="post" action="/accounts/create" class="" {
-                        div class="" {
-                            div {
-                                label for="name" class="" { "Account Name" }
+                    form method="post" action="/accounts/create" class="form-card" {
+                        form-grid {
+                            form-field {
+                                label for="name" { "Account Name" }
                                 input
                                     type="text"
                                     id="name"
                                     name="name"
                                     required
-                                    class=""
                                     placeholder="e.g., My Investment Account, Retirement Fund";
                             }
                         }
 
-                        div class="" {
+                        form-submit {
                             input
                                 type="submit"
-                                value="Create Account"
-                                class="";
+                                value="Create Account";
                         }
                     }
 
-                    div class="" {
-                        a href="/accounts" class="" {
+                    div {
+                        a href="/accounts" class="back-link" {
                             "← Back to accounts"
                         }
                     }
