@@ -2,8 +2,9 @@ use maud::{Markup, html};
 use rocket::{
     State,
     form::{Form, FromForm},
-    http::{Cookie, CookieJar, Status},
-    response::Redirect,
+    http::{Cookie, CookieJar},
+    request::FlashMessage,
+    response::{Flash, Redirect},
 };
 
 use crate::{
@@ -32,53 +33,62 @@ pub async fn login_redirect(_user: CookieAuthenticatedUser<'_>) -> Redirect {
 
 /// Renders the login page.
 #[get("/login", rank = 2)]
-pub async fn login_page() -> Markup {
+pub async fn login_page(flash: Option<FlashMessage<'_>>) -> Markup {
     html! {
         (
             Shell::create(NavSection::UserManagement, "Login", html! {
-                div class="" {
-                    div class="" {
-                        h1 class="" { "Sign in to your account" }
-                        p class="" { "Welcome back to mrkt" }
+                form-container {
+                    page-header {
+                        page-header-title { "Sign in to your account" }
+                        page-header-subtitle { "Welcome back to mrkt" }
                     }
 
-                    form method="post" action="/login" class="" {
-                        div class="" {
-                            div {
-                                label for="username" class="" { "Username" }
+                    @match flash {
+                        Some(flash) => {
+                            alert data-alert-type="warning" {
+                                p {
+                                    strong { "Error: " }
+                                    (flash.message())
+                                }
+                            }
+                        }
+                        None => { /* No flash message to display */ }
+                    }
+
+                    form method="post" action="/login" class="form-card" {
+                        form-grid {
+                            form-field {
+                                label for="username" { "Username" }
                                 input
                                     type="text"
                                     id="username"
                                     name="username"
                                     required
-                                    class=""
                                     placeholder="Enter your username";
                             }
 
-                            div {
-                                label for="password" class="" { "Password" }
+                            form-field {
+                                label for="password" { "Password" }
                                 input
                                     type="password"
                                     id="password"
                                     name="password"
                                     required
-                                    class=""
                                     placeholder="Enter your password";
                             }
                         }
 
-                        div class="" {
+                        form-submit {
                             input
                                 type="submit"
-                                value="Sign in"
-                                class="";
+                                value="Sign in";
                         }
                     }
 
-                    div class="" {
-                        p class="" {
+                    div {
+                        p {
                             "Don't have an account? "
-                            a href="/register" class="" {
+                            a href="/register" {
                                 "Sign up"
                             }
                         }
@@ -95,7 +105,7 @@ pub async fn login_submit(
     form: Form<LoginForm>,
     cookies: &CookieJar<'_>,
     state: &State<CoreState>,
-) -> Result<Redirect, Status> {
+) -> Result<Redirect, Flash<Redirect>> {
     match login(&state.pool, &form.username, &form.password).await {
         Ok(token) => {
             let cookie = Cookie::new("session_token", token);
@@ -103,7 +113,13 @@ pub async fn login_submit(
 
             Ok(Redirect::to("/"))
         }
-        Err(LoginError::InvalidCredentials) => Ok(Redirect::to("/login")),
-        Err(LoginError::DatabaseError(_)) => Err(Status::InternalServerError),
+        Err(LoginError::InvalidCredentials) => Err(Flash::error(
+            Redirect::to("/login"),
+            "Those credentials are not quite right, try again!",
+        )),
+        Err(LoginError::DatabaseError(_)) => Err(Flash::error(
+            Redirect::to("/login"),
+            "Oops, something went wrong with the server or the database. Try again or check the logs for more details",
+        )),
     }
 }

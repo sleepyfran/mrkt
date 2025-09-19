@@ -38,72 +38,69 @@ pub async fn register_page(flash: Option<FlashMessage<'_>>) -> Markup {
     html! {
         (
             Shell::create(NavSection::UserManagement, "Register", html! {
-                div class="" {
-                    div class="" {
-                        h1 class="" { "Create your account" }
+                form-container {
+                    page-header {
+                        page-header-title { "Create your account" }
+                        page-header-subtitle { "Join mrkt to start tracking your investments" }
                     }
 
                     @match flash {
                         Some(flash) => {
-                            div class="" {
-                                div class="" role="alert" {
-                                    strong class="" { "Error: " }
-                                    span class="" { (flash.message()) }
+                            alert data-alert-type="warning" {
+                                p {
+                                    strong { "Error: " }
+                                    (flash.message())
                                 }
                             }
                         }
                         None => { /* No flash message to display */ }
                     }
 
-                    form method="post" action="/register" class="" {
-                        div class="" {
-                            div {
-                                label for="username" class="" { "Username" }
+                    form method="post" action="/register" class="form-card" {
+                        form-grid {
+                            form-field {
+                                label for="username" { "Username" }
                                 input
                                     type="text"
                                     id="username"
                                     name="username"
                                     required
-                                    class=""
                                     placeholder="Choose a username";
                             }
 
-                            div {
-                                label for="password" class="" { "Password" }
+                            form-field {
+                                label for="password" { "Password" }
                                 input
                                     type="password"
                                     id="password"
                                     name="password"
                                     required
                                     minlength="8"
-                                    class=""
                                     placeholder="Create a password (min 8 characters)";
                             }
 
-                            div {
-                                label for="confirm_password" class="" { "Confirm Password" }
+                            form-field {
+                                label for="confirm_password" { "Confirm Password" }
                                 input
                                     type="password"
                                     id="confirm_password"
                                     name="confirm_password"
                                     required
-                                    class=""
                                     placeholder="Confirm your password";
                             }
                         }
 
-                        div class="" {
+                        form-submit {
                             input
                                 type="submit"
-                                value="Create Account"
-                                class="";
+                                value="Create Account";
                         }
                     }
 
-                    div class="" {
-                        p class="" {
+                    div {
+                        p {
                             "Already have an account? "
-                            a href="/login" class="" {
+                            a href="/login" {
                                 "Sign in"
                             }
                         }

@@ -345,8 +345,12 @@ form-submit input[type="submit"]:active {
 
 /* Alert Component */
 alert {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     border-radius: 6px;
-    padding: 1rem;
+    margin: 1rem 0;
     text-align: center;
 }
 
@@ -356,7 +360,6 @@ alert[data-alert-type="warning"] {
 }
 
 alert p {
-    margin: 0 0 1rem 0;
     color: var(--color-text-primary);
 }
 
