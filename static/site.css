@@ -12,6 +12,7 @@
 
     /* Background colors. */
     --color-background-primary: #f0f0f0;
+    --color-background-surface: #ffffff;
     --color-background-muted: #e0e0e0;
 
     /* Button colors. */
@@ -38,7 +39,13 @@
 
 @media (prefers-color-scheme: dark) {
     :root {
+        /* Text colors. */
+        --color-text-primary: #fff;
+        --color-text-secondary: #666;
+
+        /* Background colors. */
         --color-background-primary: #333;
+        --color-background-surface: #222;
         --color-background-muted: #444;
     }
 }
@@ -48,6 +55,8 @@ body {
     color: var(--color-text-primary);
     font-family: var(--font-family);
 }
+
+/* == HEADER & NAV. == */
 
 header {
     padding: 10px;
@@ -88,4 +97,77 @@ nav a[data-active="true"] {
     color: var(--color-text-secondary);
     text-decoration: underline;
     text-decoration-color: var(--color-accent-primary);
+}
+
+/* == COMPONENTS. == */
+
+page-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+    margin: 2rem 0;
+    padding-left: 0.5rem;
+    border-left: 0.5rem solid var(--color-accent-primary);
+}
+
+page-header-title {
+    color: var(--color-text-primary);
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+page-header-subtitle {
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+}
+
+empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--color-text-secondary);
+}
+
+empty-state-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 0.3rem;
+    color: var(--color-text-secondary);
+}
+
+empty-state-icon {
+    align-self: center;
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+empty-state-title {
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+empty-state-message {
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+empty-state-action {
+    background-color: var(--color-button-primary);
+    color: var(--color-button-text-on-primary);
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    margin-top: 1rem;
+    transition: background-color 0.3s ease;
+}
+
+empty-state-action > a {
+    color: var(--color-button-text-on-primary);
+    text-decoration: none;
+}
+
+empty-state-action:hover {
+    background-color: var(--color-button-primary-hover);
 }
