@@ -87,7 +87,7 @@ pub async fn list_all(
                                                 }
                                                 td {
                                                     @if let Some(id) = account.id {
-                                                        a href=(uri!(transactions::list::list_by_account(id))) {
+                                                        a href=(uri!(transactions::list::list_by_account(id))) class="table-action" {
                                                             "View Transactions"
                                                         }
                                                     }

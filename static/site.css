@@ -41,12 +41,16 @@
     :root {
         /* Text colors. */
         --color-text-primary: #fff;
-        --color-text-secondary: #666;
+        --color-text-secondary: #b2b2b2;
 
         /* Background colors. */
         --color-background-primary: #333;
         --color-background-surface: #222;
         --color-background-muted: #444;
+
+        /* Border colors. */
+        --color-border-primary: #555;
+        --color-border-secondary: #444;
     }
 }
 
@@ -583,6 +587,23 @@ summary-section p {
     summary-section > div:last-child {
         border-bottom: none;
     }
+}
+
+/* Table Actions */
+.table-action {
+    color: var(--color-accent-primary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.table-action:hover {
+    color: var(--color-button-text-on-primary);
+    background-color: var(--color-accent-primary);
+    text-decoration: none;
 }
 
 @media (max-width: 480px) {
