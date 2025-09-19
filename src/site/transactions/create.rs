@@ -44,20 +44,20 @@ pub async fn create_page(
     Ok(html! {
         (
             Shell::create(NavSection::Transactions, "Add Transaction", html! {
-                div class="" {
-                    div class="" {
-                        h1 class="" { "Add New Transaction" }
-                        p class="" { "Record a new stock transaction" }
+                form-container {
+                    page-header {
+                        page-header-title { "Add New Transaction" }
+                        page-header-subtitle { "Record a new stock transaction" }
                     }
 
-                    form method="post" action="/transactions/create" class="" {
-                        div class="" {
-                            div {
-                                label for="account_id" class="" { "Account" }
+                    form method="post" action="/transactions/create" class="form-card" {
+                        form-grid {
+                            form-field {
+                                label for="account_id" { "Account" }
                                 @if accounts.is_empty() {
-                                    div class="" {
-                                        p class="" { "You don't have any accounts yet." }
-                                        a href="/accounts/create" class="" {
+                                    alert data-alert-type="warning" {
+                                        p { "You don't have any accounts yet." }
+                                        a href="/accounts/create" {
                                             "Create Your First Account"
                                         }
                                     }
@@ -65,8 +65,7 @@ pub async fn create_page(
                                     select
                                         id="account_id"
                                         name="account_id"
-                                        required
-                                        class="" {
+                                        required {
                                             option value="" disabled selected { "Select an account" }
                                             @for account in accounts {
                                                 option value=(account.id.unwrap_or(0)) { (account.name) }
@@ -75,34 +74,37 @@ pub async fn create_page(
                                 }
                             }
 
-                            div {
-                                label class="" { "Transaction Type" }
-                                div class="" role="group" {
-                                    input type="radio" id="buy" name="transaction_type" value="buy" required class="";
-                                    label for="buy" class="" {
-                                        "Buy"
+                            form-field {
+                                label { "Transaction Type" }
+                                radio-group {
+                                    radio-option class="buy-option" {
+                                        input type="radio" id="buy" name="transaction_type" value="buy" required;
+                                        label for="buy" {
+                                            "Buy"
+                                        }
                                     }
-                                    input type="radio" id="sell" name="transaction_type" value="sell" required class="";
-                                    label for="sell" class="" {
-                                        "Sell"
+                                    radio-option class="sell-option" {
+                                        input type="radio" id="sell" name="transaction_type" value="sell" required;
+                                        label for="sell" {
+                                            "Sell"
+                                        }
                                     }
                                 }
                             }
 
-                            div {
-                                label for="ticker_symbol" class="" { "Ticker Symbol" }
+                            form-field {
+                                label for="ticker_symbol" { "Ticker Symbol" }
                                 input
                                     type="text"
                                     id="ticker_symbol"
                                     name="ticker_symbol"
                                     required
-                                    class=""
                                     placeholder="e.g., AAPL, MSFT";
                             }
 
-                            div class="" {
-                                div {
-                                    label for="share_quantity" class="" { "Shares" }
+                            form-row {
+                                form-field {
+                                    label for="share_quantity" { "Shares" }
                                     input
                                         type="number"
                                         id="share_quantity"
@@ -110,12 +112,11 @@ pub async fn create_page(
                                         step="0.0001"
                                         min="0"
                                         required
-                                        class=""
                                         placeholder="10";
                                 }
 
-                                div {
-                                    label for="price_per_share" class="" { "Price per Share" }
+                                form-field {
+                                    label for="price_per_share" { "Price per Share" }
                                     input
                                         type="number"
                                         id="price_per_share"
@@ -123,26 +124,24 @@ pub async fn create_page(
                                         step="0.01"
                                         min="0"
                                         required
-                                        class=""
                                         placeholder="150.00";
                                 }
                             }
 
-                            div class="" {
-                                div {
-                                    label for="currency" class="" { "Currency" }
+                            form-row {
+                                form-field {
+                                    label for="currency" { "Currency" }
                                     input
                                         type="text"
                                         id="currency"
                                         name="currency"
                                         value="USD"
                                         required
-                                        class=""
                                         placeholder="USD";
                                 }
 
-                                div {
-                                    label for="fees" class="" { "Fees" }
+                                form-field {
+                                    label for="fees" { "Fees" }
                                     input
                                         type="number"
                                         id="fees"
@@ -150,37 +149,34 @@ pub async fn create_page(
                                         step="0.01"
                                         min="0"
                                         value="0"
-                                        class=""
                                         placeholder="0.00";
                                 }
                             }
 
-                            div {
-                                label for="date" class="" { "Transaction Date" }
+                            form-field {
+                                label for="date" { "Transaction Date" }
                                 input
                                     type="date"
                                     id="date"
                                     name="date"
-                                    required
-                                    class="";
+                                    required;
                             }
-                    }
+                        }
 
-                        div class="" {
+                        form-submit {
                             input
                                 type="submit"
-                                value="Add Transaction"
-                                class="";
+                                value="Add Transaction";
                         }
                     }
 
-                    div class="" {
-                        a href="/transactions" class="" {
+                    div {
+                        a href="/transactions" class="back-link" {
                             "← Back to transactions"
                         }
                     }
                 }
-            })
+            }).add_stylesheet("transactions.css")
         )
     })
 }
