@@ -1,0 +1,242 @@
+/* Transactions Layout Styles */
+
+/* Transaction Controls - Header section with actions */
+.transaction-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border-primary);
+}
+
+.transaction-controls h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.transaction-controls a {
+    background-color: var(--color-button-primary);
+    color: var(--color-button-text-on-primary);
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.transaction-controls a:hover {
+    background-color: var(--color-button-primary-hover);
+}
+
+/* Transaction Table Container */
+.transaction-table-container {
+    background: var(--color-background-surface);
+    border: 1px solid var(--color-border-primary);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+/* Transaction Table */
+.transaction-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--color-background-surface);
+}
+
+.transaction-table thead {
+    background: var(--color-background-muted);
+    border-bottom: 2px solid var(--color-border-primary);
+}
+
+.transaction-table th {
+    padding: 1rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.transaction-table tbody tr {
+    border-bottom: 1px solid var(--color-border-primary);
+    transition: background-color 0.2s ease;
+}
+
+.transaction-table tbody tr:hover {
+    background-color: var(--color-background-muted);
+}
+
+.transaction-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.transaction-table td {
+    padding: 1rem 0.75rem;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+}
+
+/* Transaction Type Badges */
+.transaction-type-buy {
+    background-color: var(--color-accent-primary);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.transaction-type-sell {
+    background-color: var(--color-accent-danger);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Transaction Summary - Same style as dashboard activity summary */
+.transaction-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border: 1px solid var(--color-border-primary);
+    border-radius: 8px;
+    background: var(--color-background-surface);
+}
+
+.transaction-summary > div {
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+}
+
+.transaction-summary h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.transaction-summary p {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+/* Empty State for Transactions */
+.transactions-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem;
+    text-align: center;
+    background: var(--color-background-surface);
+    border: 1px solid var(--color-border-primary);
+    border-radius: 8px;
+    margin: 2rem 0;
+}
+
+.transactions-empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.6;
+}
+
+.transactions-empty-state h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.transactions-empty-state p {
+    margin: 0 0 1.5rem 0;
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+    max-width: 400px;
+}
+
+.transactions-empty-state a {
+    background-color: var(--color-button-primary);
+    color: var(--color-button-text-on-primary);
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.transactions-empty-state a:hover {
+    background-color: var(--color-button-primary-hover);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .transaction-controls {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .transaction-controls a {
+        width: 100%;
+        text-align: center;
+    }
+
+    .transaction-table-container {
+        overflow-x: auto;
+    }
+
+    .transaction-table {
+        min-width: 800px;
+    }
+
+    .transaction-summary {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .transaction-summary > div {
+        text-align: left;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--color-border-primary);
+    }
+
+    .transaction-summary > div:last-child {
+        border-bottom: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .transaction-controls,
+    .transaction-summary {
+        padding: 1rem;
+    }
+
+    .transaction-table th,
+    .transaction-table td {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .transactions-empty-state {
+        padding: 2rem 1rem;
+    }
+
+    .transactions-empty-state-icon {
+        font-size: 2.5rem;
+    }
+}

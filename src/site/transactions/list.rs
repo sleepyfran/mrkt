@@ -39,129 +39,122 @@ fn render_transactions(
     html! {
         (
             Shell::create(NavSection::Transactions, page_title, html! {
-                div class="" {
-                    div class="" {
-                        h1 class="" { (page_title) }
-                        p class="" { (page_subtitle) }
+                div {
+                    page-header {
+                        page-header-title { (page_title) }
+                        page-header-subtitle { (page_subtitle) }
                     }
 
-                    div class="" {
-                        div class="" {
-                            h2 class="" { "Transaction History" }
-                            a href="/transactions/create"
-                              class="" {
-                                "Add Transaction"
+                    div class="transaction-controls" {
+                        h2 { "Transaction History" }
+                        a href="/transactions/create" {
+                            "Add Transaction"
+                        }
+                    }
+
+                    @if transactions.is_empty() {
+                        div class="transactions-empty-state" {
+                            div class="transactions-empty-state-icon" {
+                                "📊"
+                            }
+                            h3 { "No transactions yet" }
+                            p { "Get started by adding your first stock transaction" }
+                            a href="/transactions/create" {
+                                "Add Your First Transaction"
+                            }
+                        }
+                    } @else {
+                        // Calculate summary values before iterating
+                        @let total_transactions = transactions.len();
+                        @let buy_count = transactions.iter().filter(|t| matches!(t.transaction_type, TransactionType::Buy)).count();
+                        @let sell_count = transactions.iter().filter(|t| matches!(t.transaction_type, TransactionType::Sell)).count();
+
+                        div class="transaction-summary" {
+                            div {
+                                h4 { "Total Transactions" }
+                                p { (total_transactions) }
+                            }
+                            div {
+                                h4 { "Buy Orders" }
+                                p { (buy_count) }
+                            }
+                            div {
+                                h4 { "Sell Orders" }
+                                p { (sell_count) }
                             }
                         }
 
-                        @if transactions.is_empty() {
-                            div class="" {
-                                div class="" {
-                                    // Simple icon representation using text
-                                    p class="" { "📊" }
-                                }
-                                h3 class="" { "No transactions yet" }
-                                p class="" { "Get started by adding your first stock transaction" }
-                                a href="/transactions/create"
-                                  class="" {
-                                    "Add Your First Transaction"
-                                }
-                            }
-                        } @else {
-                            // Calculate summary values before iterating
-                            @let total_transactions = transactions.len();
-                            @let buy_count = transactions.iter().filter(|t| matches!(t.transaction_type, TransactionType::Buy)).count();
-                            @let sell_count = transactions.iter().filter(|t| matches!(t.transaction_type, TransactionType::Sell)).count();
-
-                            div class="" {
-                                table class="" {
-                                    thead class="" {
-                                        tr {
-                                            th class="" { "Date" }
-                                            th class="" { "Type" }
-                                            th class="" { "Symbol" }
-                                            th class="" { "Shares" }
-                                            th class="" { "Price" }
-                                            th class="" { "Total" }
-                                            th class="" { "Account" }
-                                            th class="" { "Fees" }
-                                        }
+                        div class="transaction-table-container" {
+                            table class="transaction-table" {
+                                thead {
+                                    tr {
+                                        th { "Date" }
+                                        th { "Type" }
+                                        th { "Symbol" }
+                                        th { "Shares" }
+                                        th { "Price" }
+                                        th { "Total" }
+                                        th { "Account" }
+                                        th { "Fees" }
                                     }
-                                    tbody class="" {
-                                        @for transaction in transactions {
-                                            tr class="" {
-                                                td class="" {
-                                                    (transaction.transaction_date)
-                                                }
-                                                td class="" {
-                                                    @match transaction.transaction_type {
-                                                        TransactionType::Buy => {
-                                                            span class="" {
-                                                                "Buy"
-                                                            }
+                                }
+                                tbody {
+                                    @for transaction in transactions {
+                                        tr {
+                                            td {
+                                                (transaction.transaction_date)
+                                            }
+                                            td {
+                                                @match transaction.transaction_type {
+                                                    TransactionType::Buy => {
+                                                        span class="transaction-type-buy" {
+                                                            "Buy"
                                                         }
-                                                        TransactionType::Sell => {
-                                                            span class="" {
-                                                                "Sell"
-                                                            }
+                                                    }
+                                                    TransactionType::Sell => {
+                                                        span class="transaction-type-sell" {
+                                                            "Sell"
                                                         }
                                                     }
                                                 }
-                                                td class="" {
-                                                    (transaction.ticker_symbol)
-                                                }
-                                                td class="" {
-                                                    (format!("{:.4}", transaction.share_quantity))
-                                                }
-                                                td class="" {
-                                                    (format!("{:.2} {}", transaction.price_per_share, transaction.currency))
-                                                }
-                                                td class="" {
-                                                    (format!("{:.2} {}",
-                                                        transaction.share_quantity * transaction.price_per_share + transaction.fees,
-                                                        transaction.currency))
-                                                }
-                                                td class="" {
-                                                    @let account_name = accounts.iter()
-                                                        .find(|acc| acc.id == Some(transaction.account_id))
-                                                        .map(|acc| acc.name.as_str())
-                                                        .unwrap_or("Unknown Account");
-                                                    (account_name)
-                                                }
-                                                td class="" {
-                                                    @if transaction.fees > 0.0 {
-                                                        (format!("{:.2} {}", transaction.fees, transaction.currency))
-                                                    } @else {
-                                                        "-"
-                                                    }
+                                            }
+                                            td {
+                                                (transaction.ticker_symbol)
+                                            }
+                                            td {
+                                                (format!("{:.4}", transaction.share_quantity))
+                                            }
+                                            td {
+                                                (format!("{:.2} {}", transaction.price_per_share, transaction.currency))
+                                            }
+                                            td {
+                                                (format!("{:.2} {}",
+                                                    transaction.share_quantity * transaction.price_per_share + transaction.fees,
+                                                    transaction.currency))
+                                            }
+                                            td {
+                                                @let account_name = accounts.iter()
+                                                    .find(|acc| acc.id == Some(transaction.account_id))
+                                                    .map(|acc| acc.name.as_str())
+                                                    .unwrap_or("Unknown Account");
+                                                (account_name)
+                                            }
+                                            td {
+                                                @if transaction.fees > 0.0 {
+                                                    (format!("{:.2} {}", transaction.fees, transaction.currency))
+                                                } @else {
+                                                    "-"
                                                 }
                                             }
                                         }
                                     }
                                 }
                             }
-
-                            // Summary section
-                            div class="" {
-                                div class="" {
-                                    h4 class="" { "Total Transactions" }
-                                    p class="" { (total_transactions) }
-                                }
-                                div class="" {
-                                    h4 class="" { "Buy Orders" }
-                                    p class="" { (buy_count) }
-                                }
-                                div class="" {
-                                    h4 class="" { "Sell Orders" }
-                                    p class="" { (sell_count) }
-                                }
-                            }
-
-
                         }
                     }
                 }
             })
+            .add_stylesheet("transactions.css")
         )
     }
 }
