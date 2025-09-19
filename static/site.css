@@ -1,0 +1,91 @@
+:root {
+    --font-family: Arial, sans-serif;
+
+    /* Accents. */
+    --color-accent-primary: #4fb286;
+    --color-accent-secondary: #6c757d;
+    --color-accent-danger: #dc3545;
+
+    /* Text colors. */
+    --color-text-primary: #333;
+    --color-text-secondary: #666;
+
+    /* Background colors. */
+    --color-background-primary: #f0f0f0;
+    --color-background-muted: #e0e0e0;
+
+    /* Button colors. */
+    --color-button-text-on-primary: #fff;
+    --color-button-text-on-secondary: #fff;
+    --color-button-text-on-danger: #fff;
+
+    --color-button-primary: #4fb286;
+    --color-button-primary-hover: #449c75;
+    --color-button-primary-active: #38805f;
+
+    --color-button-secondary: #6c757d;
+    --color-button-secondary-hover: #5a6268;
+    --color-button-secondary-active: #495057;
+
+    --color-button-danger: #dc3545;
+    --color-button-danger-hover: #bd2130;
+    --color-button-danger-active: #91202c;
+
+    /* Border colors. */
+    --color-border-primary: #ccc;
+    --color-border-secondary: #999;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --color-background-primary: #333;
+        --color-background-muted: #444;
+    }
+}
+
+body {
+    background-color: var(--color-background-primary);
+    color: var(--color-text-primary);
+    font-family: var(--font-family);
+}
+
+header {
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--color-border-primary);
+}
+
+nav {
+    margin-left: 2rem;
+    margin-top: 10px;
+}
+
+nav > ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+nav > ul > li {
+    display: inline-block;
+    font-size: 1.2rem;
+    text-transform: lowercase;
+    margin-right: 10px;
+}
+
+nav a {
+    color: var(--color-text-primary);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+nav a:hover:not([data-active="true"]) {
+    color: var(--color-accent-primary);
+}
+
+nav a[data-active="true"] {
+    color: var(--color-text-secondary);
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent-primary);
+}

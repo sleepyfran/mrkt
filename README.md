@@ -8,12 +8,10 @@ In order to have a local build of the project, you need to have a few dependenci
 
 - [Rust](https://rustup.rs/), which is the central piece used to build the project.
 - [sqlx-cli](https://docs.rs/crate/sqlx-cli/latest), which is used to manage the SQLite database.
-- [Node.js](https://nodejs.org/en/), which is used to build trigger builds for the styling (Tailwind CSS).
 
 Once you have all the dependencies ready, clone the repository and run:
 
 ```bash
-npm i                        # Install Tailwind and its dependencies.
 cp .env.local.example .env   # Setup environment variables from the example file.
 sqlx database create         # Create the actual DB file.
 sqlx migrate run             # Run all pending migrations.

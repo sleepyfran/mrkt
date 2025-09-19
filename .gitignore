@@ -33,9 +33,3 @@ scripts/redirect.html
 
 # Production environment files
 .env
-
-# Node dependencies
-node_modules/
-
-# Dist files for the site
-static/site.css

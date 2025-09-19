@@ -1,3 +1,3 @@
-mod base_template;
+mod shell;
 
-pub use base_template::base_template;
+pub use shell::{NavSection, Shell};
