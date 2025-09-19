@@ -36,6 +36,8 @@ pub struct Transaction {
     pub currency: String,
     /// Fees associated with the transaction.
     pub fees: f64,
+    /// Date of creation of the transaction.
+    pub created_at: Date,
 }
 
 impl Transaction {
@@ -76,7 +78,7 @@ impl Transaction {
                     $8,
                     $9
                 )
-                RETURNING id
+                RETURNING id, created_at
             "#,
             owner_id,
             account_id,
@@ -102,6 +104,7 @@ impl Transaction {
             price_per_share,
             currency: currency.to_string(),
             fees,
+            created_at: row.created_at.date(),
         })
     }
 
@@ -141,6 +144,7 @@ impl Transaction {
                     price_per_share: row.price_per_share,
                     currency: row.currency,
                     fees: row.fees,
+                    created_at: row.created_at.date(),
                 }
             })
             .collect())
@@ -185,6 +189,7 @@ impl Transaction {
                     price_per_share: row.price_per_share,
                     currency: row.currency,
                     fees: row.fees,
+                    created_at: row.created_at.date(),
                 }
             })
             .collect())

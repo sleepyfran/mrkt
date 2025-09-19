@@ -10,7 +10,7 @@ use crate::{
     impl_responder,
     site::{
         auth_guard::CookieAuthenticatedUser,
-        shared::{NavSection, Shell, empty_state},
+        shared::{NavSection, Shell, empty_state, format_relative_date},
         transactions,
     },
 };
@@ -83,8 +83,7 @@ pub async fn list_all(
                                                     }
                                                 }
                                                 td {
-                                                    // Since we don't have created_at field, we'll show a placeholder
-                                                    "Recent"
+                                                    (format_relative_date(account.created_at))
                                                 }
                                                 td {
                                                     @if let Some(id) = account.id {

@@ -48,8 +48,8 @@ pub async fn validate_session_token(
 
     match session {
         Some(session) => {
-            let current_timestamp = OffsetDateTime::now_utc();
-            let is_valid_session = session.expires_at.unwrap() > current_timestamp;
+            let current_timestamp = OffsetDateTime::now_utc().date();
+            let is_valid_session = session.expires_at > current_timestamp;
 
             if is_valid_session {
                 Ok(session)

@@ -12,8 +12,8 @@ CREATE TABLE sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     token TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP DEFAULT (datetime('now', '+6 months')),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL DEFAULT (datetime('now', '+6 months')),
 
     FOREIGN KEY(user_id) REFERENCES users(id)
 );
@@ -48,8 +48,8 @@ CREATE TABLE transactions (
     price_per_share REAL NOT NULL CHECK (price_per_share > 0),
     currency TEXT NOT NULL,
     fees REAL NOT NULL CHECK (fees >= 0),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY(owner_id) REFERENCES users(id)
     FOREIGN KEY(account_id) REFERENCES accounts(id)

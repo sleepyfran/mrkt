@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use time::Date;
 
 use crate::core::db::repos::{DatabaseError, Pool, users_repo::UserId};
 
@@ -11,6 +12,7 @@ pub struct Account {
     /// Reference to the user who owns this account.
     pub owner_id: UserId,
     pub name: String,
+    pub created_at: Date,
 }
 
 impl Account {
@@ -20,7 +22,7 @@ impl Account {
             r#"
                 INSERT INTO accounts (owner_id, name)
                 VALUES ($1, $2)
-                RETURNING id
+                RETURNING id, created_at
             "#,
             owner_id,
             name
@@ -32,6 +34,7 @@ impl Account {
             id: row.id,
             owner_id,
             name: name.to_string(),
+            created_at: row.created_at.date(),
         })
     }
 
@@ -52,6 +55,7 @@ impl Account {
             id: Some(row.id),
             owner_id: row.owner_id,
             name: row.name,
+            created_at: row.created_at.date(),
         }))
     }
 
@@ -75,6 +79,7 @@ impl Account {
                 id: Some(row.id),
                 owner_id: row.owner_id,
                 name: row.name,
+                created_at: row.created_at.date(),
             })
             .collect())
     }

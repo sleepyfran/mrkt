@@ -1,4 +1,4 @@
-use time::OffsetDateTime;
+use time::Date;
 
 use crate::core::db::repos::{Pool, users_repo::UserId};
 
@@ -12,9 +12,8 @@ pub struct Session {
     pub user_id: UserId,
     /// Unique token for the session.
     pub token: Token,
-    /// Timestamp when the session expires. Defaults to 6 months after the creation time, so should
-    /// always be avilable even if typed as optional.
-    pub expires_at: Option<OffsetDateTime>,
+    /// Timestamp when the session expires. Defaults to 6 months after the creation time.
+    pub expires_at: Date,
 }
 
 impl Session {
@@ -36,7 +35,7 @@ impl Session {
             id: row.id,
             user_id,
             token,
-            expires_at: row.expires_at,
+            expires_at: row.expires_at.date(),
         })
     }
 
@@ -70,7 +69,7 @@ impl Session {
             id: row.id,
             user_id: row.user_id,
             token: row.token,
-            expires_at: row.expires_at,
+            expires_at: row.expires_at.date(),
         }))
     }
 }
