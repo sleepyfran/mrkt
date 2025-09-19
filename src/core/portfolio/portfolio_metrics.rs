@@ -11,6 +11,19 @@ type TotalCost = Amount;
 type Fees = Amount;
 type StockData = (ShareQuantity, TotalCost, Fees);
 
+/// Data structure containing processed transaction data, replacing the tuple for better readability.
+#[derive(Debug)]
+struct ProcessedTransactionData {
+    /// Stock positions: ticker -> (shares, total_cost, fees)
+    pub stock_positions: HashMap<String, StockData>,
+    /// Account values: account_id -> total_value
+    pub account_values: HashMap<i64, Amount>,
+    /// Total amount invested across all transactions (in USD)
+    pub total_invested: Amount,
+    /// Total fees paid across all transactions (in USD)
+    pub total_fees: Amount,
+}
+
 #[derive(Debug)]
 pub struct PortfolioMetrics {
     pub total_portfolio_value: Amount,
@@ -59,28 +72,28 @@ impl PortfolioMetrics {
         accounts: &[Account],
         market_provider: Arc<dyn MarketProvider>,
     ) -> Self {
-        let (stock_positions, account_values, total_invested, total_fees) =
-            Self::process_transactions(transactions);
+        let processed_data =
+            Self::process_transactions(transactions, market_provider.clone()).await;
 
         let transaction_counts = Self::count_transactions(transactions);
 
         let (portfolio_breakdown, total_current_value, portfolio_last_updated) =
-            Self::build_portfolio_breakdown(stock_positions, market_provider).await;
+            Self::build_portfolio_breakdown(processed_data.stock_positions, market_provider).await;
 
         let account_breakdown = Self::build_account_breakdown(
             accounts,
-            account_values,
+            processed_data.account_values,
             transactions,
             total_current_value,
         );
 
         let (net_profit_loss, profit_loss_percentage) =
-            Self::calculate_profit_loss(total_current_value, total_invested);
+            Self::calculate_profit_loss(total_current_value, processed_data.total_invested);
 
         Self {
             total_portfolio_value: total_current_value,
-            total_invested,
-            total_fees,
+            total_invested: processed_data.total_invested,
+            total_fees: processed_data.total_fees,
             net_profit_loss,
             profit_loss_percentage,
             total_transactions: transactions.len(),
@@ -94,14 +107,11 @@ impl PortfolioMetrics {
     }
 
     /// Processes all transactions to build stock positions and account values.
-    fn process_transactions(
+    /// TODO: Make the target currency (currently hardcoded to USD) customizable in the future.
+    async fn process_transactions(
         transactions: &[Transaction],
-    ) -> (
-        HashMap<String, StockData>,
-        HashMap<i64, Amount>,
-        Amount,
-        Amount,
-    ) {
+        market_provider: Arc<dyn MarketProvider>,
+    ) -> ProcessedTransactionData {
         let mut stock_positions: HashMap<String, StockData> = HashMap::new();
         let mut account_values: HashMap<i64, Amount> = HashMap::new();
         let mut total_invested = 0.0;
@@ -112,28 +122,53 @@ impl PortfolioMetrics {
             let position = stock_positions
                 .entry(transaction.ticker_symbol.clone())
                 .or_insert((0.0, 0.0, 0.0));
-            let transaction_value = transaction.share_quantity * transaction.price_per_share;
+
+            // Convert transaction values to USD if needed
+            let (usd_price_per_share, usd_fees) = if transaction.currency.to_uppercase() != "USD" {
+                match market_provider
+                    .get_exchange_rate(&transaction.currency, "USD")
+                    .await
+                {
+                    Ok(exchange_rate) => (
+                        transaction.price_per_share * exchange_rate.rate,
+                        transaction.fees * exchange_rate.rate,
+                    ),
+                    Err(_) => {
+                        // Fall back to original values if exchange rate is unavailable
+                        (transaction.price_per_share, transaction.fees)
+                    }
+                }
+            } else {
+                (transaction.price_per_share, transaction.fees)
+            };
+
+            let transaction_value = transaction.share_quantity * usd_price_per_share;
 
             match transaction.transaction_type {
                 TransactionType::Buy => {
                     position.0 += transaction.share_quantity; // shares
                     position.1 += transaction_value; // total_cost
-                    position.2 += transaction.fees; // fees
+                    position.2 += usd_fees; // fees
                     total_invested += transaction_value;
                     *account_values.entry(account_id).or_insert(0.0) += transaction_value;
                 }
                 TransactionType::Sell => {
                     position.0 -= transaction.share_quantity; // shares
                     position.1 -= transaction_value; // total_cost
-                    position.2 += transaction.fees; // fees
+                    position.2 += usd_fees; // fees
                     total_invested -= transaction_value;
                     *account_values.entry(account_id).or_insert(0.0) -= transaction_value;
                 }
             }
-            total_fees += transaction.fees;
+            total_fees += usd_fees;
         }
 
-        (stock_positions, account_values, total_invested, total_fees)
+        ProcessedTransactionData {
+            stock_positions,
+            account_values,
+            total_invested,
+            total_fees,
+        }
     }
 
     /// Counts the number of buy and sell transactions.
@@ -151,6 +186,7 @@ impl PortfolioMetrics {
     }
 
     /// Builds portfolio breakdown from stock positions.
+    /// TODO: Make the target currency (currently hardcoded to USD) customizable in the future.
     async fn build_portfolio_breakdown(
         stock_positions: HashMap<String, StockData>,
         market_provider: Arc<dyn MarketProvider>,
@@ -180,12 +216,42 @@ impl PortfolioMetrics {
                         }
 
                         // Get the most recent price from daily prices
-                        stock_data
+                        let base_price = stock_data
                             .daily_prices
                             .values()
                             .max_by_key(|price| price.date)
                             .map(|price| price.close)
-                            .unwrap_or(average_cost)
+                            .unwrap_or(average_cost);
+
+                        // Convert current market price to USD if the stock is not already in USD
+                        if stock_data.currency.to_uppercase() != "USD" {
+                            match market_provider
+                                .get_exchange_rate(&stock_data.currency, "USD")
+                                .await
+                            {
+                                Ok(exchange_rate) => {
+                                    // Update earliest_update with exchange rate timestamp if it's older
+                                    match earliest_update {
+                                        None => {
+                                            earliest_update = Some(exchange_rate.last_refreshed)
+                                        }
+                                        Some(current_earliest) => {
+                                            if exchange_rate.last_refreshed < current_earliest {
+                                                earliest_update =
+                                                    Some(exchange_rate.last_refreshed);
+                                            }
+                                        }
+                                    }
+                                    base_price * exchange_rate.rate
+                                }
+                                Err(_) => {
+                                    // Fall back to base price if exchange rate is unavailable
+                                    base_price
+                                }
+                            }
+                        } else {
+                            base_price
+                        }
                     }
                     Err(_) => {
                         // Fall back to average cost if market data is unavailable
