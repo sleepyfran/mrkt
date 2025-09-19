@@ -10,7 +10,7 @@ use crate::{
     impl_responder,
     site::{
         auth_guard::CookieAuthenticatedUser,
-        shared::{NavSection, Shell},
+        shared::{NavSection, Shell, empty_state},
         transactions,
     },
 };
@@ -32,97 +32,69 @@ pub async fn list_all(
         (
             Shell::create(
                 NavSection::Accounts,
-                "Account List",
+                "Your Accounts",
                 html! {
-                    div class="" {
-                        div class="" {
-                            h1 class="" { "Your Accounts" }
-                            p class="" { "Manage your investment accounts" }
+                    div {
+                        page-header {
+                            page-header-title { "Your Accounts" }
+                            page-header-subtitle { "Manage your investment accounts" }
                         }
 
-                        div class="" {
-                            div class="" {
-                                h2 class="" { "Account List" }
-                                a href="/accounts/create"
-                                class="" {
+                        @if accounts.is_empty() {
+                            (empty_state(
+                                "🏦",
+                                "No accounts yet",
+                                "Create your first investment account to get started",
+                                "Create Your First Account",
+                                "/accounts/create"
+                            ))
+                        } @else {
+                            section-controls {
+                                h2 { "Account List" }
+                                a href="/accounts/create" {
                                     "Add Account"
                                 }
                             }
 
-                            @if accounts.is_empty() {
-                                div class="" {
-                                    div class="" {
-                                        // Simple icon representation using text
-                                        p class="" { "🏦" }
-                                    }
-                                    h3 class="" { "No accounts yet" }
-                                    p class="" { "Create your first investment account to get started" }
-                                    a href="/accounts/create"
-                                    class="" {
-                                        "Create Your First Account"
-                                    }
-                                }
-                            } @else {
-                                // Calculate summary values before iterating
-                                @let total_accounts = accounts.len();
-
-                                div class="" {
-                                    table class="" {
-                                        thead class="" {
-                                            tr {
-                                                th class="" { "Account Name" }
-                                                th class="" { "Account ID" }
-                                                th class="" { "Created" }
-                                                th class="" { "Actions" }
-                                            }
+                            table-container {
+                                table data-table="content" {
+                                    thead {
+                                        tr {
+                                            th { "Account Name" }
+                                            th { "Account ID" }
+                                            th { "Created" }
+                                            th { "Actions" }
                                         }
-                                        tbody class="" {
-                                            @for account in &accounts {
-                                                tr class="" {
-                                                    td class="" {
-                                                        div class="" {
-                                                            div {
-                                                                div class="" { (account.name) }
-                                                                div class="" { "Investment Account" }
-                                                            }
-                                                        }
+                                    }
+                                    tbody {
+                                        @for account in &accounts {
+                                            tr {
+                                                td {
+                                                    div {
+                                                        div { (account.name) }
+                                                        div { "Investment Account" }
                                                     }
-                                                    td class="" {
-                                                        @if let Some(id) = account.id {
-                                                            (format!("#{}", id))
-                                                        } @else {
-                                                            "N/A"
-                                                        }
+                                                }
+                                                td {
+                                                    @if let Some(id) = account.id {
+                                                        (format!("#{}", id))
+                                                    } @else {
+                                                        "N/A"
                                                     }
-                                                    td class="" {
-                                                        // Since we don't have created_at field, we'll show a placeholder
-                                                        "Recent"
-                                                    }
-                                                    td class="" {
-                                                        @if let Some(id) = account.id {
-                                                            a href=(uri!(transactions::list::list_by_account(id)))
-                                                            class="" {
-                                                                "View Transactions"
-                                                            }
+                                                }
+                                                td {
+                                                    // Since we don't have created_at field, we'll show a placeholder
+                                                    "Recent"
+                                                }
+                                                td {
+                                                    @if let Some(id) = account.id {
+                                                        a href=(uri!(transactions::list::list_by_account(id))) {
+                                                            "View Transactions"
                                                         }
-                                                        // Edit and delete options can be added later
-                                                        span class="" { "•••" }
                                                     }
                                                 }
                                             }
                                         }
-                                    }
-                                }
-
-                                // Summary section
-                                div class="" {
-                                    div class="" {
-                                        h4 class="" { "Total Accounts" }
-                                        p class="" { (total_accounts) }
-                                    }
-                                    div class="" {
-                                        h4 class="" { "Active Accounts" }
-                                        p class="" { (total_accounts) }
                                     }
                                 }
                             }
