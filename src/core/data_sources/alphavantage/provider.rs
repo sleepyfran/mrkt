@@ -346,7 +346,7 @@ impl MarketProvider for AlphaVantageProvider {
 
         Ok(StockPriceData {
             symbol: response_data.meta_data.symbol,
-            currency: "USD".to_string(), // AlphaVantage doesn't always provide currency info.
+            currency: "EUR".to_string(), // AlphaVantage doesn't always provide currency info.
             daily_prices,
             last_refreshed,
         })

@@ -82,7 +82,7 @@ fn portfolio_value(metrics: &PortfolioMetrics) -> Markup {
         div class="" {
             h3 class="" { "Portfolio Value" }
             p class="" {
-                (format!("${:.2}", metrics.total_portfolio_value))
+                (format!("{:.2}€", metrics.total_portfolio_value))
             }
             p class="last-updated" { (format_last_update(metrics.last_updated)) }
         }
@@ -94,7 +94,7 @@ fn total_invested(metrics: &PortfolioMetrics) -> Markup {
         div class="" {
             h3 class="" { "Total Invested" }
             p class="" {
-                (format!("${:.2}", metrics.total_invested))
+                (format!("{:.2}€", metrics.total_invested))
             }
             p class="" { "Money put into portfolio" }
         }
@@ -107,7 +107,7 @@ fn net_profit_loss(metrics: &PortfolioMetrics) -> Markup {
             h3 class="" { "Net P&L" }
             p class=""
                 class=(if metrics.net_profit_loss >= 0.0 { "" } else { "" }) {
-                (format!("${:.2}", metrics.net_profit_loss))
+                (format!("{:.2}€", metrics.net_profit_loss))
             }
             p class=""
                 class=(if metrics.net_profit_loss >= 0.0 { "" } else { "" }) {
@@ -122,7 +122,7 @@ fn total_fees(metrics: &PortfolioMetrics) -> Markup {
         div class="" {
             h3 class="" { "Total Fees" }
             p class="" {
-                (format!("${:.2}", metrics.total_fees))
+                (format!("{:.2}€", metrics.total_fees))
             }
             p class="" { "Transaction costs" }
         }
@@ -177,13 +177,13 @@ fn current_holdings(metrics: &PortfolioMetrics) -> Markup {
                                 div {
                                     h4 { (position.ticker) }
                                     p {
-                                        (format!("{:.4} shares @ ${:.2} avg", position.shares, position.average_cost))
+                                        (format!("{:.4} shares @ {:.2}€ avg", position.shares, position.average_cost))
                                     }
                                     p class="last-updated" { (format_last_update(position.last_updated)) }
                                 }
                                 div {
                                     p {
-                                        (format!("${:.2}", position.current_value))
+                                        (format!("{:.2}€", position.current_value))
                                     }
                                     p {
                                         (format!("{:.1}%", position.percentage_of_portfolio))
@@ -217,7 +217,7 @@ fn account_summary(metrics: &PortfolioMetrics) -> Markup {
                                 }
                                 div {
                                     p {
-                                        (format!("${:.2}", account.total_value))
+                                        (format!("{:.2}€", account.total_value))
                                     }
                                     p {
                                         (format!("{:.1}%", account.percentage_of_portfolio))

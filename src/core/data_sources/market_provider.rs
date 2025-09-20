@@ -67,7 +67,7 @@ pub trait MarketProvider: Send + Sync {
     /// Retrieves the exchange rate between two currencies.
     ///
     /// # Arguments
-    /// * `from_currency` - The source currency code (e.g., "USD")
+    /// * `from_currency` - The source currency code (e.g., "EUR")
     /// * `to_currency` - The target currency code (e.g., "EUR")
     ///
     /// # Returns

@@ -18,9 +18,9 @@ struct ProcessedTransactionData {
     pub stock_positions: HashMap<String, StockData>,
     /// Account values: account_id -> total_value
     pub account_values: HashMap<i64, Amount>,
-    /// Total amount invested across all transactions (in USD)
+    /// Total amount invested across all transactions (in EUR)
     pub total_invested: Amount,
-    /// Total fees paid across all transactions (in USD)
+    /// Total fees paid across all transactions (in EUR)
     pub total_fees: Amount,
 }
 
@@ -107,7 +107,7 @@ impl PortfolioMetrics {
     }
 
     /// Processes all transactions to build stock positions and account values.
-    /// TODO: Make the target currency (currently hardcoded to USD) customizable in the future.
+    /// TODO: Make the target currency (currently hardcoded to EUR) customizable in the future.
     async fn process_transactions(
         transactions: &[Transaction],
         market_provider: Arc<dyn MarketProvider>,
@@ -123,10 +123,10 @@ impl PortfolioMetrics {
                 .entry(transaction.ticker_symbol.clone())
                 .or_insert((0.0, 0.0, 0.0));
 
-            // Convert transaction values to USD if needed
-            let (usd_price_per_share, usd_fees) = if transaction.currency.to_uppercase() != "USD" {
+            // Convert transaction values to EUR if needed
+            let (eur_price_per_share, eur_fees) = if transaction.currency.to_uppercase() != "EUR" {
                 match market_provider
-                    .get_exchange_rate(&transaction.currency, "USD")
+                    .get_exchange_rate(&transaction.currency, "EUR")
                     .await
                 {
                     Ok(exchange_rate) => (
@@ -142,25 +142,25 @@ impl PortfolioMetrics {
                 (transaction.price_per_share, transaction.fees)
             };
 
-            let transaction_value = transaction.share_quantity * usd_price_per_share;
+            let transaction_value = transaction.share_quantity * eur_price_per_share;
 
             match transaction.transaction_type {
                 TransactionType::Buy => {
                     position.0 += transaction.share_quantity; // shares
                     position.1 += transaction_value; // total_cost
-                    position.2 += usd_fees; // fees
+                    position.2 += eur_fees; // fees
                     total_invested += transaction_value;
                     *account_values.entry(account_id).or_insert(0.0) += transaction_value;
                 }
                 TransactionType::Sell => {
                     position.0 -= transaction.share_quantity; // shares
                     position.1 -= transaction_value; // total_cost
-                    position.2 += usd_fees; // fees
+                    position.2 += eur_fees; // fees
                     total_invested -= transaction_value;
                     *account_values.entry(account_id).or_insert(0.0) -= transaction_value;
                 }
             }
-            total_fees += usd_fees;
+            total_fees += eur_fees;
         }
 
         ProcessedTransactionData {
@@ -186,7 +186,7 @@ impl PortfolioMetrics {
     }
 
     /// Builds portfolio breakdown from stock positions.
-    /// TODO: Make the target currency (currently hardcoded to USD) customizable in the future.
+    /// TODO: Make the target currency (currently hardcoded to EUR) customizable in the future.
     async fn build_portfolio_breakdown(
         stock_positions: HashMap<String, StockData>,
         market_provider: Arc<dyn MarketProvider>,
@@ -223,10 +223,10 @@ impl PortfolioMetrics {
                             .map(|price| price.close)
                             .unwrap_or(average_cost);
 
-                        // Convert current market price to USD if the stock is not already in USD
-                        if stock_data.currency.to_uppercase() != "USD" {
+                        // Convert current market price to EUR if the stock is not already in EUR
+                        if stock_data.currency.to_uppercase() != "EUR" {
                             match market_provider
-                                .get_exchange_rate(&stock_data.currency, "USD")
+                                .get_exchange_rate(&stock_data.currency, "EUR")
                                 .await
                             {
                                 Ok(exchange_rate) => {

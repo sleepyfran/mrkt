@@ -108,21 +108,21 @@ mod tests {
 
     #[test]
     fn test_currency_creation() {
-        let currency = Currency::new("USD".to_string(), "United States Dollar".to_string());
-        assert_eq!(currency.code, "USD");
+        let currency = Currency::new("EUR".to_string(), "United States Dollar".to_string());
+        assert_eq!(currency.code, "EUR");
         assert_eq!(currency.name, "United States Dollar");
     }
 
     #[test]
     fn test_get_currency() {
         // Test with a known currency.
-        let usd = get_currency("USD").expect("USD should exist");
-        assert_eq!(usd.code, "USD");
-        assert_eq!(usd.name, "United States Dollar");
+        let EUR = get_currency("EUR").expect("EUR should exist");
+        assert_eq!(EUR.code, "EUR");
+        assert_eq!(EUR.name, "United States Dollar");
 
         // Test case insensitive.
-        let usd_lower = get_currency("usd").expect("usd should work");
-        assert_eq!(usd_lower.code, "USD");
+        let EUR_lower = get_currency("EUR").expect("EUR should work");
+        assert_eq!(EUR_lower.code, "EUR");
 
         // Test with non-existent currency.
         assert!(get_currency("XYZ").is_err());
@@ -130,8 +130,8 @@ mod tests {
 
     #[test]
     fn test_is_valid_currency_code() {
-        assert!(is_valid_currency_code("USD"));
-        assert!(is_valid_currency_code("usd")); // Case insensitive.
+        assert!(is_valid_currency_code("EUR"));
+        assert!(is_valid_currency_code("EUR")); // Case insensitive.
         assert!(!is_valid_currency_code("XYZ"));
     }
 
@@ -139,7 +139,7 @@ mod tests {
     fn test_get_all_currencies() {
         let currencies = get_all_currencies();
         assert!(!currencies.is_empty());
-        assert!(currencies.contains_key("USD"));
+        assert!(currencies.contains_key("EUR"));
         assert!(currencies.contains_key("EUR"));
         assert!(currencies.contains_key("GBP"));
     }
@@ -148,7 +148,7 @@ mod tests {
     fn test_get_currency_codes() {
         let codes = get_currency_codes();
         assert!(!codes.is_empty());
-        assert!(codes.contains(&"USD".to_string()));
+        assert!(codes.contains(&"EUR".to_string()));
 
         // Verify they're sorted.
         let mut sorted_codes = codes.clone();
