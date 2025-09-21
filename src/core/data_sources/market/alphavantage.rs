@@ -2,7 +2,6 @@ use crate::core::data_sources::market_provider::{
     DailyStockPrice, ExchangeRate, MarketDataError, MarketDataResult, MarketProvider,
     StockPriceData, SymbolSearchResult,
 };
-use log::trace;
 use reqwest::Client;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -38,8 +37,6 @@ impl AlphaVantageProvider {
             }
             query_pairs.append_pair("apikey", &self.api_key);
         }
-
-        error!("Built URL: {}", url);
 
         Ok(url)
     }
@@ -208,6 +205,10 @@ impl From<time::error::InvalidFormatDescription> for MarketDataError {
 
 #[async_trait::async_trait]
 impl MarketProvider for AlphaVantageProvider {
+    fn name(&self) -> &'static str {
+        "AlphaVantage"
+    }
+
     async fn get_exchange_rate(
         &self,
         from_currency: &str,
@@ -413,6 +414,12 @@ impl MarketProvider for AlphaVantageProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_provider_name() {
+        let provider = AlphaVantageProvider::new("test_key".to_string());
+        assert_eq!(provider.name(), "AlphaVantage");
+    }
 
     #[test]
     fn test_provider_creation() {

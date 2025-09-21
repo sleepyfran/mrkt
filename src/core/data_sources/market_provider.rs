@@ -64,6 +64,12 @@ pub type MarketDataResult<T> = Result<T, MarketDataError>;
 /// Trait defining how to asynchronously retrieve market data.
 #[async_trait::async_trait]
 pub trait MarketProvider: Send + Sync {
+    /// Returns the name of this market data provider.
+    ///
+    /// # Returns
+    /// A string identifying this provider (e.g., "AlphaVantage", "Yahoo Finance").
+    fn name(&self) -> &'static str;
+
     /// Retrieves the exchange rate between two currencies.
     ///
     /// # Arguments

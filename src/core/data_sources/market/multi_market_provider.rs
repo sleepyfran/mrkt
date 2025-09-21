@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use log::{trace, warn};
+use log::{info, trace, warn};
 use time::Duration;
 
 use crate::core::{
@@ -54,6 +54,10 @@ impl MultiMarketProvider {
 
 #[async_trait::async_trait]
 impl MarketProvider for MultiMarketProvider {
+    fn name(&self) -> &'static str {
+        "Multi-Provider"
+    }
+
     async fn get_exchange_rate(
         &self,
         from_currency: &str,
@@ -81,12 +85,19 @@ impl MarketProvider for MultiMarketProvider {
         for provider in &self.providers {
             match provider.get_exchange_rate(from_currency, to_currency).await {
                 Ok(fetched_rate) => {
+                    info!(
+                        "Successfully fetched exchange rate for {}-{} from {}",
+                        from_currency,
+                        to_currency,
+                        provider.name()
+                    );
                     rate = Some(fetched_rate);
                     break;
                 }
                 Err(e) => {
                     warn!(
-                        "Error fetching exchange rate from provider: {}. Trying next provider.",
+                        "Error fetching exchange rate from {}: {}. Trying next provider.",
+                        provider.name(),
                         e
                     );
                 }
@@ -127,12 +138,19 @@ impl MarketProvider for MultiMarketProvider {
         for provider in &self.providers {
             match provider.get_stock_prices(symbol).await {
                 Ok(fetched_data) => {
+                    info!(
+                        "Successfully fetched stock prices for {} from {}",
+                        symbol,
+                        provider.name()
+                    );
                     stock_data = Some(fetched_data);
                     break;
                 }
                 Err(e) => {
                     warn!(
-                        "Error fetching stock prices from provider: {}. Trying next provider.",
+                        "Error fetching stock prices for {} from {}: {}. Trying next provider.",
+                        symbol,
+                        provider.name(),
                         e
                     );
                 }
@@ -158,10 +176,19 @@ impl MarketProvider for MultiMarketProvider {
     async fn search_symbols(&self, query: &str) -> MarketDataResult<Vec<SymbolSearchResult>> {
         for provider in &self.providers {
             match provider.search_symbols(query).await {
-                Ok(results) => return Ok(results),
+                Ok(results) => {
+                    info!(
+                        "Successfully searched symbols for '{}' from {}, found {} results",
+                        query,
+                        provider.name(),
+                        results.len()
+                    );
+                    return Ok(results);
+                }
                 Err(e) => {
                     warn!(
-                        "Error searching symbols from provider: {}. Trying next provider.",
+                        "Error searching symbols from {}: {}. Trying next provider.",
+                        provider.name(),
                         e
                     );
                 }

@@ -10,8 +10,10 @@ pub use market::multi_market_provider::MultiMarketProvider;
 pub use market_provider::*;
 
 use crate::core::data_sources::market::{
-    alphavantage::provider::AlphaVantageProvider, multi_market_provider::Providers,
+    alphavantage::AlphaVantageProvider, multi_market_provider::Providers,
+    yahoo::YahooFinanceProvider,
 };
+use log::warn;
 
 /// Attempts to create and return a market data provider based on environment variables.
 /// Currently, only Alpha Vantage is supported if the ALPHAVANTAGE_API_KEY environment
@@ -20,6 +22,15 @@ pub fn create_market_provider() -> Arc<dyn MarketProvider> {
     dotenv().ok();
 
     let mut providers: Providers = Vec::new();
+
+    let yahoo_connector = YahooFinanceProvider::new();
+    match yahoo_connector {
+        Ok(connector) => providers.push(Arc::new(connector)),
+        Err(e) => warn!(
+            "Failed to create Yahoo Finance provider: {}, proceeding without it",
+            e
+        ),
+    }
 
     let alpha_vantage_api_key = std::env::var("ALPHAVANTAGE_API_KEY");
     if let Some(api_key) = alpha_vantage_api_key.ok() {
