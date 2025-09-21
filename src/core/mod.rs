@@ -1,5 +1,6 @@
 pub mod accounts;
 pub mod auth;
+mod cache;
 pub mod data_sources;
 mod db;
 mod logger;

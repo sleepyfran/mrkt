@@ -1,44 +1,19 @@
-use crate::core::{
-    data_sources::market_provider::{
-        DailyStockPrice, ExchangeRate, MarketDataError, MarketDataResult, MarketProvider,
-        StockPriceData, SymbolSearchResult,
-    },
-    logger,
+use crate::core::data_sources::market_provider::{
+    DailyStockPrice, ExchangeRate, MarketDataError, MarketDataResult, MarketProvider,
+    StockPriceData, SymbolSearchResult,
 };
+use log::trace;
 use reqwest::Client;
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::sync::Mutex;
-use time::{Date, Duration, OffsetDateTime, PrimitiveDateTime, Time};
+use time::{Date, OffsetDateTime, PrimitiveDateTime, Time};
 use url::Url;
-
-/// Cache entry that holds data with an expiration time.
-#[derive(Debug, Clone)]
-struct CacheEntry<T> {
-    data: T,
-    expires_at: OffsetDateTime,
-}
-
-impl<T> CacheEntry<T> {
-    fn new(data: T, ttl: Duration) -> Self {
-        Self {
-            data,
-            expires_at: OffsetDateTime::now_utc() + ttl,
-        }
-    }
-
-    fn is_expired(&self) -> bool {
-        OffsetDateTime::now_utc() > self.expires_at
-    }
-}
 
 /// AlphaVantage API provider implementation.
 pub struct AlphaVantageProvider {
     api_key: String,
     client: Client,
     base_url: String,
-    exchange_rate_cache: Mutex<HashMap<String, CacheEntry<ExchangeRate>>>,
-    stock_price_cache: Mutex<HashMap<String, CacheEntry<StockPriceData>>>,
 }
 
 impl AlphaVantageProvider {
@@ -48,55 +23,6 @@ impl AlphaVantageProvider {
             api_key,
             client: Client::new(),
             base_url: "https://www.alphavantage.co/query".to_string(),
-            exchange_rate_cache: Mutex::new(HashMap::new()),
-            stock_price_cache: Mutex::new(HashMap::new()),
-        }
-    }
-
-    /// Cache TTL is 1 day.
-    const CACHE_TTL: Duration = Duration::days(1);
-
-    /// Get exchange rate from cache if available and not expired.
-    fn get_cached_exchange_rate(
-        &self,
-        from_currency: &str,
-        to_currency: &str,
-    ) -> Option<ExchangeRate> {
-        let cache_key = format!("{}-{}", from_currency, to_currency);
-        let cache = self.exchange_rate_cache.lock().ok()?;
-        let entry = cache.get(&cache_key)?;
-
-        if entry.is_expired() {
-            None
-        } else {
-            Some(entry.data.clone())
-        }
-    }
-
-    /// Cache an exchange rate.
-    fn cache_exchange_rate(&self, from_currency: &str, to_currency: &str, rate: ExchangeRate) {
-        let cache_key = format!("{}-{}", from_currency, to_currency);
-        if let Ok(mut cache) = self.exchange_rate_cache.lock() {
-            cache.insert(cache_key, CacheEntry::new(rate, Self::CACHE_TTL));
-        }
-    }
-
-    /// Get stock price data from cache if available and not expired.
-    fn get_cached_stock_prices(&self, symbol: &str) -> Option<StockPriceData> {
-        let cache = self.stock_price_cache.lock().ok()?;
-        let entry = cache.get(symbol)?;
-
-        if entry.is_expired() {
-            None
-        } else {
-            Some(entry.data.clone())
-        }
-    }
-
-    /// Cache stock price data.
-    fn cache_stock_prices(&self, symbol: &str, data: StockPriceData) {
-        if let Ok(mut cache) = self.stock_price_cache.lock() {
-            cache.insert(symbol.to_string(), CacheEntry::new(data, Self::CACHE_TTL));
         }
     }
 
@@ -112,6 +38,8 @@ impl AlphaVantageProvider {
             }
             query_pairs.append_pair("apikey", &self.api_key);
         }
+
+        error!("Built URL: {}", url);
 
         Ok(url)
     }
@@ -285,15 +213,6 @@ impl MarketProvider for AlphaVantageProvider {
         from_currency: &str,
         to_currency: &str,
     ) -> MarketDataResult<ExchangeRate> {
-        if let Some(cached_rate) = self.get_cached_exchange_rate(from_currency, to_currency) {
-            logger::info!(
-                "Using cached exchange rate for {} to {}",
-                from_currency,
-                to_currency
-            );
-            return Ok(cached_rate);
-        }
-
         let params = [
             ("function", "CURRENCY_EXCHANGE_RATE"),
             ("from_currency", from_currency),
@@ -344,17 +263,10 @@ impl MarketProvider for AlphaVantageProvider {
             last_refreshed,
         };
 
-        self.cache_exchange_rate(from_currency, to_currency, exchange_rate.clone());
-
         Ok(exchange_rate)
     }
 
     async fn get_stock_prices(&self, symbol: &str) -> MarketDataResult<StockPriceData> {
-        if let Some(cached_data) = self.get_cached_stock_prices(symbol) {
-            logger::info!("Using cached stock prices for {}", symbol);
-            return Ok(cached_data);
-        }
-
         let params = [
             ("function", "TIME_SERIES_DAILY"),
             ("symbol", symbol),
@@ -442,8 +354,6 @@ impl MarketProvider for AlphaVantageProvider {
             last_refreshed,
         };
 
-        self.cache_stock_prices(symbol, stock_price_data.clone());
-
         Ok(stock_price_data)
     }
 
@@ -509,74 +419,6 @@ mod tests {
         let provider = AlphaVantageProvider::new("test_api_key".to_string());
         assert_eq!(provider.api_key, "test_api_key");
         assert_eq!(provider.base_url, "https://www.alphavantage.co/query");
-    }
-
-    #[test]
-    fn test_cache_entry_creation_and_expiration() {
-        use time::Duration;
-
-        let data = "test_data".to_string();
-        let entry = CacheEntry::new(data.clone(), Duration::seconds(1));
-
-        assert_eq!(entry.data, data);
-        assert!(!entry.is_expired());
-
-        // Test with expired entry
-        let expired_entry = CacheEntry::new(data.clone(), Duration::seconds(-1));
-        assert!(expired_entry.is_expired());
-    }
-
-    #[test]
-    fn test_exchange_rate_cache_operations() {
-        let provider = AlphaVantageProvider::new("test_key".to_string());
-
-        // Initially, cache should be empty.
-        assert!(provider.get_cached_exchange_rate("USD", "EUR").is_none());
-
-        // Create a test exchange rate.
-        let exchange_rate = ExchangeRate {
-            from_currency: "USD".to_string(),
-            to_currency: "EUR".to_string(),
-            rate: 0.85,
-            last_refreshed: OffsetDateTime::now_utc(),
-        };
-
-        // Cache it.
-        provider.cache_exchange_rate("USD", "EUR", exchange_rate.clone());
-
-        // Should be able to retrieve it.
-        let cached = provider.get_cached_exchange_rate("USD", "EUR");
-        assert!(cached.is_some());
-        let cached_rate = cached.unwrap();
-        assert_eq!(cached_rate.from_currency, "USD");
-        assert_eq!(cached_rate.to_currency, "EUR");
-        assert_eq!(cached_rate.rate, 0.85);
-    }
-
-    #[test]
-    fn test_stock_price_cache_operations() {
-        let provider = AlphaVantageProvider::new("test_key".to_string());
-
-        // Initially, cache should be empty.
-        assert!(provider.get_cached_stock_prices("AAPL").is_none());
-
-        // Create test stock price data.
-        let stock_data = StockPriceData {
-            symbol: "AAPL".to_string(),
-            currency: "USD".to_string(),
-            daily_prices: HashMap::new(),
-            last_refreshed: OffsetDateTime::now_utc(),
-        };
-
-        // Cache it.
-        provider.cache_stock_prices("AAPL", stock_data.clone());
-
-        // Should be able to retrieve it.
-        let cached = provider.get_cached_stock_prices("AAPL");
-        assert!(cached.is_some());
-        let cached_data = cached.unwrap();
-        assert_eq!(cached_data.symbol, "AAPL");
-        assert_eq!(cached_data.currency, "USD");
     }
 
     #[test]
