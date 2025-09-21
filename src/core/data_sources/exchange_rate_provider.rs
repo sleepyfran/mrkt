@@ -29,6 +29,24 @@ pub enum ExchangeRateError {
 /// Result type for exchange rate operations.
 pub type ExchangeRateResult<T> = Result<T, ExchangeRateError>;
 
+impl From<reqwest::Error> for ExchangeRateError {
+    fn from(error: reqwest::Error) -> Self {
+        if error.is_timeout() {
+            ExchangeRateError::Network("Request timeout".to_string())
+        } else if error.is_connect() {
+            ExchangeRateError::Network("Connection error".to_string())
+        } else {
+            ExchangeRateError::Network(error.to_string())
+        }
+    }
+}
+
+impl From<url::ParseError> for ExchangeRateError {
+    fn from(error: url::ParseError) -> Self {
+        ExchangeRateError::Network(format!("URL parse error: {}", error))
+    }
+}
+
 /// Trait defining how to asynchronously retrieve exchange rate data.
 #[async_trait::async_trait]
 pub trait ExchangeRateProvider: Send + Sync {

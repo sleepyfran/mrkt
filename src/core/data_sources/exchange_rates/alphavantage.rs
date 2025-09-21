@@ -63,8 +63,9 @@ impl AlphaVantageExchangeRateProvider {
 
     /// Parse a date string from AlphaVantage format (YYYY-MM-DD) to OffsetDateTime.
     fn parse_date(date_str: &str) -> Result<OffsetDateTime, ExchangeRateError> {
-        let format = time::format_description::parse("[year]-[month]-[day]")
-            .map_err(|e| ExchangeRateError::Parsing(format!("Invalid format description: {}", e)))?;
+        let format = time::format_description::parse("[year]-[month]-[day]").map_err(|e| {
+            ExchangeRateError::Parsing(format!("Invalid format description: {}", e))
+        })?;
 
         let date = Date::parse(date_str, &format).map_err(|e| {
             ExchangeRateError::Parsing(format!("Invalid date format '{}': {}", date_str, e))
@@ -105,24 +106,6 @@ struct AlphaVantageErrorResponse {
     error_message: Option<String>,
     #[serde(rename = "Note")]
     note: Option<String>,
-}
-
-impl From<reqwest::Error> for ExchangeRateError {
-    fn from(error: reqwest::Error) -> Self {
-        if error.is_timeout() {
-            ExchangeRateError::Network("Request timeout".to_string())
-        } else if error.is_connect() {
-            ExchangeRateError::Network("Connection error".to_string())
-        } else {
-            ExchangeRateError::Network(error.to_string())
-        }
-    }
-}
-
-impl From<url::ParseError> for ExchangeRateError {
-    fn from(error: url::ParseError) -> Self {
-        ExchangeRateError::Network(format!("URL parse error: {}", error))
-    }
 }
 
 #[async_trait::async_trait]
