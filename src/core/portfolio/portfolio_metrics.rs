@@ -73,12 +73,16 @@ impl PortfolioMetrics {
         market_provider: Arc<dyn MarketProvider>,
     ) -> Self {
         let processed_data =
-            Self::process_transactions(transactions, market_provider.clone()).await;
+            Self::process_transactions(transactions, market_provider.as_ref()).await;
 
         let transaction_counts = Self::count_transactions(transactions);
 
         let (portfolio_breakdown, total_current_value, portfolio_last_updated) =
-            Self::build_portfolio_breakdown(processed_data.stock_positions, market_provider).await;
+            Self::build_portfolio_breakdown(
+                processed_data.stock_positions,
+                market_provider.as_ref(),
+            )
+            .await;
 
         let account_breakdown = Self::build_account_breakdown(
             accounts,
@@ -110,7 +114,7 @@ impl PortfolioMetrics {
     /// TODO: Make the target currency (currently hardcoded to EUR) customizable in the future.
     async fn process_transactions(
         transactions: &[Transaction],
-        market_provider: Arc<dyn MarketProvider>,
+        market_provider: &dyn MarketProvider,
     ) -> ProcessedTransactionData {
         let mut stock_positions: HashMap<String, StockData> = HashMap::new();
         let mut account_values: HashMap<i64, Amount> = HashMap::new();
@@ -189,7 +193,7 @@ impl PortfolioMetrics {
     /// TODO: Make the target currency (currently hardcoded to EUR) customizable in the future.
     async fn build_portfolio_breakdown(
         stock_positions: HashMap<String, StockData>,
-        market_provider: Arc<dyn MarketProvider>,
+        market_provider: &dyn MarketProvider,
     ) -> (Vec<StockPosition>, Amount, Option<OffsetDateTime>) {
         let mut portfolio_breakdown = Vec::new();
         let mut total_current_value = 0.0;

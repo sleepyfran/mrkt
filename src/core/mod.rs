@@ -2,6 +2,7 @@ pub mod accounts;
 pub mod auth;
 pub mod data_sources;
 mod db;
+mod logger;
 pub mod portfolio;
 pub mod shared;
 pub mod state;
@@ -27,6 +28,11 @@ pub async fn init() -> state::CoreState {
 
     // Next, set up the market data provider.
     let market_provider = data_sources::create_market_provider();
+
+    // Setup the global logger.
+    logger::setup_logger().expect("Failed to set up logger");
+
+    logger::info!("Finished setting up core state");
 
     state::CoreState {
         pool,

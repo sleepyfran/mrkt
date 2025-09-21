@@ -108,9 +108,9 @@ mod tests {
 
     #[test]
     fn test_currency_creation() {
-        let currency = Currency::new("EUR".to_string(), "United States Dollar".to_string());
+        let currency = Currency::new("EUR".to_string(), "Euro".to_string());
         assert_eq!(currency.code, "EUR");
-        assert_eq!(currency.name, "United States Dollar");
+        assert_eq!(currency.name, "Euro");
     }
 
     #[test]
@@ -118,7 +118,7 @@ mod tests {
         // Test with a known currency.
         let EUR = get_currency("EUR").expect("EUR should exist");
         assert_eq!(EUR.code, "EUR");
-        assert_eq!(EUR.name, "United States Dollar");
+        assert_eq!(EUR.name, "Euro");
 
         // Test case insensitive.
         let EUR_lower = get_currency("EUR").expect("EUR should work");
