@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 use time::OffsetDateTime;
 
 use crate::core::{
-    Account, Transaction, TransactionType, data_sources::MarketProvider, shared::Amount,
+    Account, Transaction, TransactionType, data_sources::{ExchangeRateProvider, MarketProvider}, shared::Amount,
 };
 
 // Type aliases for better code readability
@@ -71,9 +71,10 @@ impl PortfolioMetrics {
         transactions: &[Transaction],
         accounts: &[Account],
         market_provider: Arc<dyn MarketProvider>,
+        exchange_rate_provider: Arc<dyn ExchangeRateProvider>,
     ) -> Self {
         let processed_data =
-            Self::process_transactions(transactions, market_provider.as_ref()).await;
+            Self::process_transactions(transactions, market_provider.as_ref(), exchange_rate_provider.as_ref()).await;
 
         let transaction_counts = Self::count_transactions(transactions);
 
@@ -81,6 +82,7 @@ impl PortfolioMetrics {
             Self::build_portfolio_breakdown(
                 processed_data.stock_positions,
                 market_provider.as_ref(),
+                exchange_rate_provider.as_ref(),
             )
             .await;
 
@@ -114,7 +116,8 @@ impl PortfolioMetrics {
     /// TODO: Make the target currency (currently hardcoded to EUR) customizable in the future.
     async fn process_transactions(
         transactions: &[Transaction],
-        market_provider: &dyn MarketProvider,
+        _market_provider: &dyn MarketProvider,
+        exchange_rate_provider: &dyn ExchangeRateProvider,
     ) -> ProcessedTransactionData {
         let mut stock_positions: HashMap<String, StockData> = HashMap::new();
         let mut account_values: HashMap<i64, Amount> = HashMap::new();
@@ -129,7 +132,7 @@ impl PortfolioMetrics {
 
             // Convert transaction values to EUR if needed
             let (eur_price_per_share, eur_fees) = if transaction.currency.to_uppercase() != "EUR" {
-                match market_provider
+                match exchange_rate_provider
                     .get_exchange_rate(&transaction.currency, "EUR")
                     .await
                 {
@@ -194,6 +197,7 @@ impl PortfolioMetrics {
     async fn build_portfolio_breakdown(
         stock_positions: HashMap<String, StockData>,
         market_provider: &dyn MarketProvider,
+        exchange_rate_provider: &dyn ExchangeRateProvider,
     ) -> (Vec<StockPosition>, Amount, Option<OffsetDateTime>) {
         let mut portfolio_breakdown = Vec::new();
         let mut total_current_value = 0.0;
@@ -229,7 +233,7 @@ impl PortfolioMetrics {
 
                         // Convert current market price to EUR if the stock is not already in EUR
                         if stock_data.currency.to_uppercase() != "EUR" {
-                            match market_provider
+                            match exchange_rate_provider
                                 .get_exchange_rate(&stock_data.currency, "EUR")
                                 .await
                             {

@@ -26,7 +26,7 @@ pub async fn dashboard(
         .map_err(|_| ListAllTransactionsError::DatabaseError(sqlx::Error::RowNotFound))?;
 
     let metrics =
-        PortfolioMetrics::from(&transactions, &accounts, db_state.market_provider.clone()).await;
+        PortfolioMetrics::from(&transactions, &accounts, db_state.market_provider.clone(), db_state.exchange_rate_provider.clone()).await;
 
     Ok(html! {
         (

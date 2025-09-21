@@ -30,6 +30,9 @@ pub async fn init() -> state::CoreState {
     // Next, set up the market data provider.
     let market_provider = data_sources::create_market_provider();
 
+    // Set up the exchange rate provider.
+    let exchange_rate_provider = data_sources::create_exchange_rate_provider();
+
     // Setup the global logger.
     logger::setup_logger().expect("Failed to set up logger");
 
@@ -38,5 +41,6 @@ pub async fn init() -> state::CoreState {
     state::CoreState {
         pool,
         market_provider,
+        exchange_rate_provider,
     }
 }

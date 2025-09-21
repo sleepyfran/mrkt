@@ -1,5 +1,5 @@
 use crate::core::data_sources::market_provider::{
-    DailyStockPrice, ExchangeRate, MarketDataError, MarketDataResult, MarketProvider,
+    DailyStockPrice, MarketDataError, MarketDataResult, MarketProvider,
     StockPriceData, SymbolSearchResult,
 };
 use reqwest::Client;
@@ -79,28 +79,6 @@ impl AlphaVantageProvider {
 }
 
 // AlphaVantage API response structures.
-#[derive(Debug, Deserialize)]
-struct AlphaVantageExchangeRateResponse {
-    #[serde(rename = "Realtime Currency Exchange Rate")]
-    exchange_rate: AlphaVantageExchangeRate,
-}
-
-#[derive(Debug, Deserialize)]
-struct AlphaVantageExchangeRate {
-    #[serde(rename = "1. From_Currency Code")]
-    from_currency: String,
-    #[serde(rename = "2. From_Currency Name")]
-    from_currency_name: String,
-    #[serde(rename = "3. To_Currency Code")]
-    to_currency: String,
-    #[serde(rename = "4. To_Currency Name")]
-    to_currency_name: String,
-    #[serde(rename = "5. Exchange Rate")]
-    exchange_rate: String,
-    #[serde(rename = "6. Last Refreshed")]
-    last_refreshed: String,
-}
-
 #[derive(Debug, Deserialize)]
 struct AlphaVantageTimeSeriesResponse {
     #[serde(rename = "Meta Data")]
@@ -207,64 +185,6 @@ impl From<time::error::InvalidFormatDescription> for MarketDataError {
 impl MarketProvider for AlphaVantageProvider {
     fn name(&self) -> &'static str {
         "AlphaVantage"
-    }
-
-    async fn get_exchange_rate(
-        &self,
-        from_currency: &str,
-        to_currency: &str,
-    ) -> MarketDataResult<ExchangeRate> {
-        let params = [
-            ("function", "CURRENCY_EXCHANGE_RATE"),
-            ("from_currency", from_currency),
-            ("to_currency", to_currency),
-        ];
-
-        let url = self.build_url(&params)?;
-        let response = self.client.get(url).send().await?;
-
-        if !response.status().is_success() {
-            return Err(MarketDataError::Api(format!(
-                "HTTP error: {}",
-                response.status()
-            )));
-        }
-
-        let response_text = response.text().await?;
-
-        if let Ok(error_response) =
-            serde_json::from_str::<AlphaVantageErrorResponse>(&response_text)
-        {
-            if let Some(error_msg) = error_response.error_message {
-                return Err(MarketDataError::Api(error_msg));
-            }
-            if let Some(note) = error_response.note {
-                if note.contains("rate limit") || note.contains("frequency") {
-                    return Err(MarketDataError::RateLimit);
-                }
-                return Err(MarketDataError::Api(note));
-            }
-        }
-
-        let response_data: AlphaVantageExchangeRateResponse = serde_json::from_str(&response_text)
-            .map_err(|e| MarketDataError::Parsing(format!("JSON parse error: {}", e)))?;
-
-        let rate = response_data
-            .exchange_rate
-            .exchange_rate
-            .parse::<f64>()
-            .map_err(|e| MarketDataError::Parsing(format!("Invalid exchange rate: {}", e)))?;
-
-        let last_refreshed = Self::parse_timestamp(&response_data.exchange_rate.last_refreshed)?;
-
-        let exchange_rate = ExchangeRate {
-            from_currency: response_data.exchange_rate.from_currency,
-            to_currency: response_data.exchange_rate.to_currency,
-            rate,
-            last_refreshed,
-        };
-
-        Ok(exchange_rate)
     }
 
     async fn get_stock_prices(&self, symbol: &str) -> MarketDataResult<StockPriceData> {

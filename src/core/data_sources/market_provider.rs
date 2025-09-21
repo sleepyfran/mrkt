@@ -1,15 +1,6 @@
 use std::collections::HashMap;
 use time::OffsetDateTime;
 
-/// Represents an exchange rate between two currencies.
-#[derive(Debug, Clone)]
-pub struct ExchangeRate {
-    pub from_currency: String,
-    pub to_currency: String,
-    pub rate: f64,
-    pub last_refreshed: OffsetDateTime,
-}
-
 /// Represents daily stock price data.
 #[derive(Debug, Clone)]
 pub struct DailyStockPrice {
@@ -69,20 +60,6 @@ pub trait MarketProvider: Send + Sync {
     /// # Returns
     /// A string identifying this provider (e.g., "AlphaVantage", "Yahoo Finance").
     fn name(&self) -> &'static str;
-
-    /// Retrieves the exchange rate between two currencies.
-    ///
-    /// # Arguments
-    /// * `from_currency` - The source currency code (e.g., "EUR")
-    /// * `to_currency` - The target currency code (e.g., "EUR")
-    ///
-    /// # Returns
-    /// An `ExchangeRate` containing the rate and last refresh date.
-    async fn get_exchange_rate(
-        &self,
-        from_currency: &str,
-        to_currency: &str,
-    ) -> MarketDataResult<ExchangeRate>;
 
     /// Retrieves daily stock price data for a given symbol.
     ///

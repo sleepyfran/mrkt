@@ -6,7 +6,7 @@ use time::Duration;
 use crate::core::{
     cache::Cache,
     data_sources::{
-        ExchangeRate, MarketDataError, MarketDataResult, MarketProvider, StockPriceData,
+        MarketDataError, MarketDataResult, MarketProvider, StockPriceData,
         SymbolSearchResult,
     },
 };
@@ -19,21 +19,12 @@ pub struct MultiMarketProvider {
     /// facilitate future expansion.
     providers: Providers,
 
-    /// Cache for storing exchange rates with a time-to-live (TTL) to minimize
-    /// redundant network requests.
-    exchange_rate_cache: RwLock<Cache<String, ExchangeRate>>,
-
     /// Cache for storing stock prices with a time-to-live (TTL) to minimize
     /// redundant network requests.
     stock_price_cache: RwLock<Cache<String, StockPriceData>>,
 }
 
 impl MultiMarketProvider {
-    /// Cache TTL for exchange rates, set to 1 week, since currency rates
-    /// typically do not fluctuate that much to require more frequent updates
-    /// and providers often have strict rate limits.
-    const EXCHANGE_RATE_CACHE_TTL: Duration = Duration::weeks(1);
-
     /// Cache TTL for stock prices, set to 1 day.
     const STOCK_PRICE_CACHE_TTL: Duration = Duration::days(1);
 
@@ -46,7 +37,6 @@ impl MultiMarketProvider {
 
         Self {
             providers,
-            exchange_rate_cache: RwLock::new(Cache::new()),
             stock_price_cache: RwLock::new(Cache::new()),
         }
     }
@@ -56,71 +46,6 @@ impl MultiMarketProvider {
 impl MarketProvider for MultiMarketProvider {
     fn name(&self) -> &'static str {
         "Multi-Provider"
-    }
-
-    async fn get_exchange_rate(
-        &self,
-        from_currency: &str,
-        to_currency: &str,
-    ) -> MarketDataResult<ExchangeRate> {
-        let cache_key = format!("{}-{}", from_currency, to_currency);
-
-        // Attempt to retrieve from cache first.
-        {
-            let mut cache = self
-                .exchange_rate_cache
-                .write()
-                .expect("Cache lock poisoned");
-            if let Some(cached_rate) = cache.get_or_delete(&cache_key) {
-                trace!(
-                    "Using cached exchange rate for {}-{}",
-                    from_currency, to_currency
-                );
-                return Ok(cached_rate.clone());
-            }
-        }
-
-        // If not in cache, fetch from the first available provider.
-        let mut rate: Option<ExchangeRate> = None;
-        for provider in &self.providers {
-            match provider.get_exchange_rate(from_currency, to_currency).await {
-                Ok(fetched_rate) => {
-                    info!(
-                        "Successfully fetched exchange rate for {}-{} from {}",
-                        from_currency,
-                        to_currency,
-                        provider.name()
-                    );
-                    rate = Some(fetched_rate);
-                    break;
-                }
-                Err(e) => {
-                    warn!(
-                        "Error fetching exchange rate from {}: {}. Trying next provider.",
-                        provider.name(),
-                        e
-                    );
-                }
-            }
-        }
-
-        match rate {
-            Some(exchange_rate) => {
-                {
-                    let mut cache = self
-                        .exchange_rate_cache
-                        .write()
-                        .expect("Cache lock poisoned");
-                    cache.insert(
-                        cache_key,
-                        exchange_rate.clone(),
-                        Self::EXCHANGE_RATE_CACHE_TTL,
-                    );
-                }
-                Ok(exchange_rate)
-            }
-            None => Err(MarketDataError::NoData),
-        }
     }
 
     async fn get_stock_prices(&self, symbol: &str) -> MarketDataResult<StockPriceData> {

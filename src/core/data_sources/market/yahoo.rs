@@ -7,7 +7,7 @@ use time::OffsetDateTime;
 use yahoo_finance_api as yahoo;
 
 use crate::core::data_sources::market_provider::{
-    DailyStockPrice, ExchangeRate, MarketDataError, MarketDataResult, MarketProvider,
+    DailyStockPrice, MarketDataError, MarketDataResult, MarketProvider,
     StockPriceData, SymbolSearchResult,
 };
 
@@ -105,18 +105,6 @@ impl YahooFinanceProvider {
 impl MarketProvider for YahooFinanceProvider {
     fn name(&self) -> &'static str {
         "Yahoo Finance"
-    }
-
-    /// Retrieves the exchange rate between two currencies.
-    ///
-    /// Note: Yahoo Finance does not provide direct currency exchange rate data.
-    /// This method will return an error indicating that currency data is not available.
-    async fn get_exchange_rate(
-        &self,
-        _from_currency: &str,
-        _to_currency: &str,
-    ) -> MarketDataResult<ExchangeRate> {
-        Err(MarketDataError::NoData)
     }
 
     /// Retrieves daily stock price data for a given symbol.
@@ -306,9 +294,8 @@ mod tests {
     }
 
     #[test]
-    fn test_exchange_rate_returns_error() {
-        // We can't easily test async functions without tokio, so just test the sync parts
-        let provider = YahooFinanceProvider::new().unwrap();
-        // The method itself will be tested in integration tests
+    fn test_yahoo_provider_creation() {
+        let result = YahooFinanceProvider::new();
+        assert!(result.is_ok());
     }
 }
