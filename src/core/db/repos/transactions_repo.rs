@@ -194,4 +194,62 @@ impl Transaction {
             })
             .collect())
     }
+
+    /// Retrieves a transaction by its ID and ensures it belongs to the specified user.
+    pub async fn by_id(
+        pool: &Pool,
+        transaction_id: TransactionId,
+        belonging_to_user_id: UserId,
+    ) -> Result<Option<Self>, sqlx::Error> {
+        let row = sqlx::query!(
+            r#"
+                SELECT *
+                FROM transactions
+                WHERE id = $1 AND owner_id = $2
+            "#,
+            transaction_id,
+            belonging_to_user_id
+        )
+        .fetch_optional(pool)
+        .await?;
+
+        if let Some(row) = row {
+            let parsed_date = validate_is_valid_date(&row.transaction_date).unwrap();
+
+            Ok(Some(Self {
+                id: Some(row.id),
+                owner_id: row.owner_id,
+                account_id: row.account_id,
+                transaction_type: match row.transaction_type {
+                    0 => TransactionType::Buy,
+                    1 => TransactionType::Sell,
+                    _ => panic!("Invalid transaction type in database"),
+                },
+                transaction_date: parsed_date,
+                ticker_symbol: row.ticker_symbol,
+                share_quantity: row.quantity,
+                price_per_share: row.price_per_share,
+                currency: row.currency,
+                fees: row.fees,
+                created_at: row.created_at.date(),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Deletes a transaction by its ID.
+    pub async fn delete(pool: &Pool, transaction_id: TransactionId) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            r#"
+                DELETE FROM transactions
+                WHERE id = $1
+            "#,
+            transaction_id
+        )
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
 }

@@ -316,7 +316,6 @@ form-submit {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  padding-top: 1rem;
 }
 
 form-submit input[type="submit"] {
@@ -337,6 +336,24 @@ form-submit input[type="submit"]:hover {
 
 form-submit input[type="submit"]:active {
   background-color: var(--color-button-primary-active);
+}
+
+form-submit[data-variant="danger"] input[type="submit"] {
+  background-color: var(--color-button-danger);
+  color: var(--color-button-text-on-danger);
+}
+
+form-submit[data-variant="danger"] input[type="submit"]:hover {
+  background-color: var(--color-button-danger-hover);
+}
+
+form-submit[data-variant="danger"] input[type="submit"]:active {
+  background-color: var(--color-button-danger-active);
+}
+
+form-submit[data-size="small"] input[type="submit"] {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
 }
 
 /* Back Link */

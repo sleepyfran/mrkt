@@ -93,6 +93,7 @@ fn render_transactions(
                                         th { "Total" }
                                         th { "Account" }
                                         th { "Fees" }
+                                        th { "Actions" }
                                     }
                                 }
                                 tbody {
@@ -139,6 +140,20 @@ fn render_transactions(
                                             td {
                                                 @if transaction.fees > 0.0 {
                                                     (format!("{:.2} {}", transaction.fees, transaction.currency))
+                                                } @else {
+                                                    "-"
+                                                }
+                                            }
+                                            td {
+                                                @if let Some(transaction_id) = transaction.id {
+                                                    form method="post" action=(format!("/transactions/{}/delete", transaction_id)) style="display: inline;"
+                                                         onsubmit="return confirm('Are you sure you want to delete this transaction? This action cannot be undone.');" {
+                                                        form-submit data-size="small" data-variant="danger" {
+                                                            input
+                                                                type="submit"
+                                                                value="Delete";
+                                                        }
+                                                    }
                                                 } @else {
                                                     "-"
                                                 }
