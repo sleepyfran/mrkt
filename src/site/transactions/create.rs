@@ -305,6 +305,7 @@ pub async fn create_page(
                     }
                 }
             }).add_stylesheet("transactions.css")
+              .add_script("ticker-suggestions.js")
         )
     })
 }

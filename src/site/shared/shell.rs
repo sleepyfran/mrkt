@@ -26,6 +26,9 @@ pub struct Shell<'a> {
 
     /// Extra stylesheets to be included in the page.
     extra_stylesheets: Vec<&'a str>,
+
+    /// Extra JavaScript files to be included in the page.
+    extra_scripts: Vec<&'a str>,
 }
 
 impl<'a> Shell<'a> {
@@ -37,6 +40,7 @@ impl<'a> Shell<'a> {
             title,
             content,
             extra_stylesheets: Vec::new(),
+            extra_scripts: Vec::new(),
         }
     }
 
@@ -49,6 +53,12 @@ impl<'a> Shell<'a> {
     /// Adds an extra stylesheet to the shell, which gets included in the head of the page.
     pub fn add_stylesheet(mut self, stylesheet: &'a str) -> Self {
         self.extra_stylesheets.push(stylesheet);
+        self
+    }
+
+    /// Adds an extra JavaScript file to the shell, which gets included at the end of the body.
+    pub fn add_script(mut self, script: &'a str) -> Self {
+        self.extra_scripts.push(script);
         self
     }
 }
@@ -83,6 +93,9 @@ impl<'a> Render for Shell<'a> {
                 }
                 main {
                     (self.content)
+                }
+                @for script in &self.extra_scripts {
+                    script src={ "/public/"(script) } {}
                 }
             }
         }
