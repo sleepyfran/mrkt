@@ -473,6 +473,7 @@ section-controls a {
 
 section-controls a:hover {
   background-color: var(--color-button-primary-hover);
+  color: var(--color-button-text-on-primary);
 }
 
 /* Table Container */
