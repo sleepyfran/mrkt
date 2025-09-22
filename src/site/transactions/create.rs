@@ -217,7 +217,7 @@ pub async fn create_page(
                                         type="number"
                                         id="share_quantity"
                                         name="share_quantity"
-                                        step="0.0001"
+                                        step="0.000000001"
                                         min="0"
                                         required
                                         value=(shares_value)
@@ -233,7 +233,7 @@ pub async fn create_page(
                                         type="number"
                                         id="price_per_share"
                                         name="price_per_share"
-                                        step="0.01"
+                                        step="0.00001"
                                         min="0"
                                         required
                                         value=(price_value)
