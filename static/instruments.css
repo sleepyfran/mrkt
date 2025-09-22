@@ -1,0 +1,212 @@
+/* == INSTRUMENTS PAGE == */
+
+.instruments-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.instruments-table th,
+.instruments-table td {
+  padding: 1rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border-primary);
+}
+
+.instruments-table th {
+  background-color: var(--color-background-secondary);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.instruments-table td {
+  vertical-align: top;
+}
+
+/* Symbol Column */
+.instrument-symbol {
+  min-width: 120px;
+}
+
+.symbol-info h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.symbol-info p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+/* Numeric Columns */
+.shares,
+.avg-cost,
+.current-price,
+.market-value {
+  text-align: right;
+  font-family: "SF Mono", "Monaco", "Menlo", "Courier New", monospace;
+  font-size: 0.875rem;
+}
+
+/* Price Change Column */
+.price-change {
+  text-align: right;
+  min-width: 100px;
+}
+
+.price-change-value {
+  font-family: "SF Mono", "Monaco", "Menlo", "Courier New", monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.125rem;
+}
+
+.price-change-percent {
+  font-family: "SF Mono", "Monaco", "Menlo", "Courier New", monospace;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.price-change.positive .price-change-value,
+.price-change.positive .price-change-percent {
+  color: #22c55e;
+}
+
+.price-change.negative .price-change-value,
+.price-change.negative .price-change-percent {
+  color: #ef4444;
+}
+
+/* P&L Column */
+.pnl {
+  text-align: right;
+  min-width: 100px;
+}
+
+.pnl-value {
+  font-family: "SF Mono", "Monaco", "Menlo", "Courier New", monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.125rem;
+}
+
+.pnl-percent {
+  font-family: "SF Mono", "Monaco", "Menlo", "Courier New", monospace;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.pnl.positive .pnl-value,
+.pnl.positive .pnl-percent {
+  color: #22c55e;
+}
+
+.pnl.negative .pnl-value,
+.pnl.negative .pnl-percent {
+  color: #ef4444;
+}
+
+/* Last Updated Column */
+.last-updated {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  min-width: 80px;
+}
+
+/* Instruments Summary */
+.instruments-summary {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: var(--color-background-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--color-border-primary);
+}
+
+.instruments-summary p {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.instruments-summary .positive {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.instruments-summary .negative {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .instruments-table th,
+  .instruments-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .instruments-table th {
+    font-size: 0.75rem;
+  }
+
+  .symbol-info h4 {
+    font-size: 0.875rem;
+  }
+
+  .price-change-value,
+  .pnl-value {
+    font-size: 0.75rem;
+  }
+
+  .price-change-percent,
+  .pnl-percent {
+    font-size: 0.6875rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .instruments-table {
+    font-size: 0.75rem;
+  }
+
+  .instruments-table th,
+  .instruments-table td {
+    padding: 0.5rem 0.25rem;
+  }
+
+  /* Hide less important columns on mobile */
+  .instruments-table th:nth-child(8),
+  .instruments-table td:nth-child(8) {
+    display: none;
+  }
+
+  .instruments-summary {
+    padding: 1rem;
+  }
+
+  .instruments-summary p {
+    font-size: 0.75rem;
+    line-height: 1.8;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Hide more columns on very small screens */
+  .instruments-table th:nth-child(2),
+  .instruments-table td:nth-child(2),
+  .instruments-table th:nth-child(7),
+  .instruments-table td:nth-child(7) {
+    display: none;
+  }
+
+  .symbol-info p {
+    display: none;
+  }
+}

@@ -5,6 +5,7 @@ use crate::site::auth_guard::CookieAuthenticatedUser;
 mod accounts;
 mod auth_guard;
 pub mod dashboard;
+mod instruments;
 mod shared;
 mod transactions;
 mod users;
@@ -25,6 +26,7 @@ pub fn routes() -> Vec<rocket::Route> {
     routes.append(&mut standard_routes());
     routes.append(&mut accounts::routes());
     routes.append(&mut dashboard::routes());
+    routes.append(&mut instruments::routes());
     routes.append(&mut transactions::routes());
     routes.append(&mut users::routes());
 

@@ -2,7 +2,9 @@ use std::{collections::HashMap, sync::Arc};
 use time::OffsetDateTime;
 
 use crate::core::{
-    Account, Transaction, TransactionType, data_sources::{ExchangeRateProvider, MarketProvider}, shared::Amount,
+    Account, Transaction, TransactionType,
+    data_sources::{ExchangeRateProvider, MarketProvider},
+    shared::Amount,
 };
 
 // Type aliases for better code readability
@@ -51,6 +53,16 @@ pub struct StockPosition {
     /// Current market value using real-time data from the market provider.
     /// Falls back to average cost if market data is unavailable.
     pub current_value: Amount,
+    /// Current price per share from market data
+    pub current_price: Amount,
+    /// Absolute price difference (current_price - average_cost)
+    pub price_difference: Amount,
+    /// Percentage price change ((current_price - average_cost) / average_cost * 100)
+    pub price_change_percentage: f64,
+    /// Total profit/loss for this position (current_value - total_invested)
+    pub total_pnl: Amount,
+    /// Percentage profit/loss for this position ((current_value - total_invested) / total_invested * 100)
+    pub total_pnl_percentage: f64,
     pub percentage_of_portfolio: f64,
     /// The timestamp when this stock's price was last updated from market data.
     /// None if using historical cost (market data unavailable).
@@ -73,8 +85,12 @@ impl PortfolioMetrics {
         market_provider: Arc<dyn MarketProvider>,
         exchange_rate_provider: Arc<dyn ExchangeRateProvider>,
     ) -> Self {
-        let processed_data =
-            Self::process_transactions(transactions, market_provider.as_ref(), exchange_rate_provider.as_ref()).await;
+        let processed_data = Self::process_transactions(
+            transactions,
+            market_provider.as_ref(),
+            exchange_rate_provider.as_ref(),
+        )
+        .await;
 
         let transaction_counts = Self::count_transactions(transactions);
 
@@ -270,12 +286,33 @@ impl PortfolioMetrics {
                 let current_value = shares * current_price;
                 total_current_value += current_value;
 
+                // Calculate price changes
+                let price_difference = current_price - average_cost;
+                let price_change_percentage = if average_cost > 0.0 {
+                    (price_difference / average_cost) * 100.0
+                } else {
+                    0.0
+                };
+
+                // Calculate total P&L
+                let total_pnl = current_value - total_cost;
+                let total_pnl_percentage = if *total_cost > 0.0 {
+                    (total_pnl / total_cost) * 100.0
+                } else {
+                    0.0
+                };
+
                 portfolio_breakdown.push(StockPosition {
                     ticker: ticker.clone(),
                     shares: *shares,
                     average_cost,
                     total_invested: *total_cost,
                     current_value,
+                    current_price,
+                    price_difference,
+                    price_change_percentage,
+                    total_pnl,
+                    total_pnl_percentage,
                     percentage_of_portfolio: 0.0,
                     last_updated: stock_last_updated,
                 });

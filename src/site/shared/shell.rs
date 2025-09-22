@@ -4,6 +4,7 @@ use maud::{Markup, Render, html};
 #[derive(Debug, PartialEq, Eq)]
 pub enum NavSection {
     Dashboard,
+    Instruments,
     Transactions,
     Accounts,
     UserManagement,
@@ -73,6 +74,7 @@ impl<'a> Render for Shell<'a> {
                         nav {
                             ul {
                                 li { a data-active=(self.section == NavSection::Dashboard) href="/dashboard" { "Dashboard" } }
+                                li { a data-active=(self.section == NavSection::Instruments) href="/instruments" { "Instruments" } }
                                 li { a data-active=(self.section == NavSection::Transactions) href="/transactions" { "Transactions" } }
                                 li { a data-active=(self.section == NavSection::Accounts) href="/accounts" { "Accounts" } }
                             }
