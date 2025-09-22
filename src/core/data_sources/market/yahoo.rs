@@ -2,13 +2,14 @@
 Disclaimer: This code was entirely vibe-coded, so here be dragons.
 */
 
+use log::error;
 use std::collections::HashMap;
 use time::OffsetDateTime;
 use yahoo_finance_api as yahoo;
 
 use crate::core::data_sources::market_provider::{
-    DailyStockPrice, MarketDataError, MarketDataResult, MarketProvider,
-    StockPriceData, SymbolSearchResult,
+    DailyStockPrice, MarketDataError, MarketDataResult, MarketProvider, StockPriceData,
+    SymbolSearchResult,
 };
 
 /// Yahoo Finance implementation of the MarketProvider trait.
@@ -218,11 +219,19 @@ impl MarketProvider for YahooFinanceProvider {
                 // Infer currency from symbol
                 let currency = Self::infer_currency_from_symbol(&quote_item.symbol);
 
+                let normalized_score = if quote_item.score > 0.0 {
+                    // Yahoo scores seem to range from ~20000+ for exact matches down to lower values
+                    // We'll normalize by treating 20000+ as 1.0 and scaling down proportionally
+                    (quote_item.score / 20000.0).min(1.0)
+                } else {
+                    0.0
+                };
+
                 results.push(SymbolSearchResult {
                     symbol: quote_item.symbol,
                     name,
                     currency,
-                    match_score: quote_item.score,
+                    match_score: normalized_score,
                 });
             }
         }

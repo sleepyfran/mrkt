@@ -3,6 +3,7 @@ use thiserror::Error;
 
 use crate::core::{
     Account, AccountId, Transaction, TransactionId,
+    data_sources::market_provider::SymbolSearchResult,
     db::repos::{
         DatabaseError, Pool, is_foreign_key_violation, transactions_repo::TransactionType,
     },
@@ -19,10 +20,17 @@ pub enum CreateTransactionError {
     InvalidCurrency,
     #[error("Invalid ticker symbol")]
     InvalidTickerSymbol,
+    #[error("Ticker symbol '{symbol}' not found")]
+    TickerSymbolNotFound {
+        symbol: String,
+        suggestions: Vec<SymbolSearchResult>,
+    },
     #[error("Invalid date, must be in the format YYYY-MM-DD")]
     InvalidDate,
     #[error("The specified account ID does not exist")]
     AccountNotFound,
+    #[error("Market data service unavailable")]
+    MarketDataUnavailable,
     #[error("Database error")]
     DatabaseError(#[from] DatabaseError),
 }
@@ -30,6 +38,7 @@ pub enum CreateTransactionError {
 /// Attempts to create a new transaction with the given data for the specified user ID.
 pub async fn create_transaction(
     pool: &Pool,
+    market_provider: &dyn crate::core::data_sources::MarketProvider,
     belonging_to_user_id: TransactionId,
     data: &TransactionData,
 ) -> Result<Transaction, CreateTransactionError> {
@@ -43,6 +52,37 @@ pub async fn create_transaction(
         .map_err(|_| CreateTransactionError::InvalidTickerSymbol)?;
     let date =
         validate_is_valid_date(&data.date).map_err(|_| CreateTransactionError::InvalidDate)?;
+
+    // Validate ticker symbol exists in market data
+    match market_provider.get_stock_prices(&data.ticker_symbol).await {
+        Ok(_) => {
+            // Ticker symbol is valid, continue
+        }
+        Err(_) => {
+            // Ticker symbol not found, try to find suggestions
+            match market_provider.search_symbols(&data.ticker_symbol).await {
+                Ok(suggestions) => {
+                    // Take up to 5 best matches based on score
+                    let mut sorted_suggestions = suggestions;
+                    sorted_suggestions.sort_by(|a, b| {
+                        b.match_score
+                            .partial_cmp(&a.match_score)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    });
+                    sorted_suggestions.truncate(5);
+
+                    return Err(CreateTransactionError::TickerSymbolNotFound {
+                        symbol: data.ticker_symbol.clone(),
+                        suggestions: sorted_suggestions,
+                    });
+                }
+                Err(_) => {
+                    // Market data service unavailable
+                    return Err(CreateTransactionError::MarketDataUnavailable);
+                }
+            }
+        }
+    }
 
     let account = Account::by_id(pool, data.account_id).await?;
     if let None = account {

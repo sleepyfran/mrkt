@@ -1,7 +1,17 @@
+use crate::core::data_sources::market_provider::SymbolSearchResult;
+
 /// A standard error response structure that includes an error message.
 #[derive(serde::Serialize)]
 pub struct ErrorResponse {
     pub error: String,
+}
+
+/// A specialized error response for ticker symbol validation errors.
+#[derive(serde::Serialize)]
+pub struct TickerSymbolErrorResponse {
+    pub error: String,
+    pub invalid_symbol: String,
+    pub suggestions: Vec<SymbolSearchResult>,
 }
 
 /// Macro to implement the `Responder` trait for a custom enum that returns JSON error responses.

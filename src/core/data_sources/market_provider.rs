@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use time::OffsetDateTime;
 
@@ -22,7 +23,7 @@ pub struct StockPriceData {
 }
 
 /// Represents a search result for a stock symbol.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SymbolSearchResult {
     pub symbol: String,
     pub name: String,
