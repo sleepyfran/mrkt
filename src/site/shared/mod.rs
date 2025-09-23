@@ -2,4 +2,4 @@ mod components;
 mod shell;
 
 pub use components::*;
-pub use shell::{NavSection, Shell};
+pub use shell::{NavSection, Shell, ShellFlash};

@@ -384,12 +384,13 @@ alert {
   text-align: left;
 }
 
-alert[data-alert-type="warning"] {
+alert[data-alert-type="warning"],
+alert[data-alert-type="error"] {
   background-color: rgba(220, 53, 69, 0.1);
   border: 1px solid rgba(220, 53, 69, 0.3);
 }
 
-alert[data-alert-type="info"] {
+alert[data-alert-type="success"] {
   background-color: rgba(79, 178, 134, 0.1);
   border: 1px solid rgba(79, 178, 134, 0.3);
 }

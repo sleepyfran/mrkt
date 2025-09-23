@@ -1,5 +1,5 @@
 use maud::{Markup, html};
-use rocket::{State, http::Status};
+use rocket::{State, http::Status, request::FlashMessage};
 
 use crate::{
     core::{
@@ -35,6 +35,7 @@ fn render_transactions(
     accounts: &[Account],
     page_title: &str,
     page_subtitle: &str,
+    flash: Option<FlashMessage<'_>>,
 ) -> Markup {
     html! {
         (
@@ -166,6 +167,7 @@ fn render_transactions(
                     }
                 }
             })
+            .attach_flash(flash)
             .add_stylesheet("transactions.css")
         )
     }
@@ -175,6 +177,7 @@ fn render_transactions(
 pub async fn list_all(
     db_state: &State<CoreState>,
     auth_user: CookieAuthenticatedUser<'_>,
+    flash: Option<FlashMessage<'_>>,
 ) -> Result<Markup, ListAllTransactionsError> {
     let transactions = list_all_transactions(&db_state.pool, auth_user.user_id).await?;
 
@@ -187,6 +190,7 @@ pub async fn list_all(
         &accounts,
         "Your Transactions",
         "View and manage your stock transactions",
+        flash,
     ))
 }
 
@@ -195,6 +199,7 @@ pub async fn list_by_account(
     account_id: AccountId,
     db_state: &State<CoreState>,
     auth_user: CookieAuthenticatedUser<'_>,
+    flash: Option<FlashMessage<'_>>,
 ) -> Result<Markup, ListByAccountTransactionsError> {
     // Verify that the account belongs to the user
     let account = Account::by_id(&db_state.pool, account_id)
@@ -227,5 +232,6 @@ pub async fn list_by_account(
         &accounts,
         &format!("Transactions for {}", account_name),
         &format!("View transactions for the {} account", account_name),
+        flash,
     ))
 }
