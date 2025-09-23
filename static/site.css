@@ -178,7 +178,7 @@ empty-state-action {
 }
 
 empty-state-action > a {
-  color: var(--color-button-text-on-primary);
+  color: var(--color-button-text-on-primary) !important;
   text-decoration: none;
 }
 
