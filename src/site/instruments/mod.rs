@@ -2,5 +2,5 @@ mod instruments;
 
 /// All routes for the instruments page.
 pub fn routes() -> Vec<rocket::Route> {
-    routes![instruments::instruments]
+    routes![instruments::instruments, instruments::instrument_detail]
 }

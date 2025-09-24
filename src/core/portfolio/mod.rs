@@ -1,3 +1,3 @@
 mod portfolio_metrics;
 
-pub use portfolio_metrics::PortfolioMetrics;
+pub use portfolio_metrics::{PortfolioMetrics, StockPosition};
