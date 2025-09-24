@@ -38,6 +38,9 @@ OPENEXCHANGERATES_APP_ID=your_app_id_here
 # ALPHAVANTAGE_API_KEY=your_api_key_here  # Optional fallback
 ```
 
+> [!IMPORTANT]
+> Setting up an AlphaVantage key will also set it up as a fallback provider for stock market data.
+
 Once you have the dependencies and database set up, you can start the server by running:
 
 ```bash
