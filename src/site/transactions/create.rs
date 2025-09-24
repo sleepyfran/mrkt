@@ -166,6 +166,8 @@ fn render_form_internal(
                                     required
                                     value=(ticker_value)
                                     placeholder="e.g., AAPL, MSFT";
+
+                                p class="suggestion" { "You can also type a name to get suggestions once you submit the form."}
                             }
 
                             @if let Some((invalid_symbol, suggestions)) = ticker_error {

@@ -113,6 +113,12 @@ nav a[data-active="true"] {
   text-decoration-color: var(--color-accent-primary);
 }
 
+p.suggestion {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
 /* == COMPONENTS. == */
 
 page-header {
