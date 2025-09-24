@@ -1,12 +1,10 @@
 use maud::{Markup, html};
 use rocket::{
     State,
-    form::{Form, FromForm},
+    form::{Contextual, Form, FromForm},
     http::Status,
-    request::FlashMessage,
-    response::{Flash, Redirect},
+    response::Redirect,
 };
-use serde::{Deserialize, Serialize};
 
 use crate::{
     core::{
@@ -21,31 +19,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum CreateTransactionFormError {
-    TickerNotFound {
-        symbol: String,
-        suggestions: Vec<SymbolSearchResult>,
-        form_data: TransactionForm,
-    },
-}
-
-impl CreateTransactionFormError {
-    pub fn to_flash_message(&self) -> String {
-        let json = serde_json::to_string(self).unwrap_or_else(|_| "{}".to_string());
-        format!("CREATE_ERROR:{}", json)
-    }
-
-    pub fn from_flash_message(message: &str) -> Option<Self> {
-        if let Some(json_str) = message.strip_prefix("CREATE_ERROR:") {
-            serde_json::from_str(json_str).ok()
-        } else {
-            None
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, FromForm)]
+#[derive(Debug, Clone, FromForm)]
 pub struct TransactionForm {
     pub account_id: AccountId,
     pub transaction_type: String, // "buy" or "sell"
@@ -62,22 +36,40 @@ pub struct TransactionForm {
 pub async fn create_page(
     db_state: &State<CoreState>,
     auth_user: CookieAuthenticatedUser<'_>,
-    flash: Option<FlashMessage<'_>>,
 ) -> Result<Markup, Status> {
     let accounts = Account::for_user(&db_state.pool, auth_user.user_id)
         .await
         .map_err(|_| Status::InternalServerError)?;
 
-    let form_data = if let Some(ref flash) = flash {
-        CreateTransactionFormError::from_flash_message(flash.message()).and_then(
-            |error| match error {
-                CreateTransactionFormError::TickerNotFound { form_data, .. } => Some(form_data),
-            },
-        )
-    } else {
-        None
+    let empty_context = Contextual {
+        value: None,
+        context: rocket::form::Context::default(),
     };
 
+    render_form(accounts, &empty_context)
+}
+
+fn render_form(
+    accounts: Vec<Account>,
+    form_context: &Contextual<TransactionForm>,
+) -> Result<Markup, Status> {
+    render_form_internal(accounts, form_context, None)
+}
+
+fn render_form_with_ticker_error(
+    accounts: Vec<Account>,
+    form_context: &Contextual<TransactionForm>,
+    invalid_symbol: &str,
+    suggestions: &[SymbolSearchResult],
+) -> Result<Markup, Status> {
+    render_form_internal(accounts, form_context, Some((invalid_symbol, suggestions)))
+}
+
+fn render_form_internal(
+    accounts: Vec<Account>,
+    form_context: &Contextual<TransactionForm>,
+    ticker_error: Option<(&str, &[SymbolSearchResult])>,
+) -> Result<Markup, Status> {
     Ok(html! {
         (
             Shell::create(NavSection::Transactions, "Add Transaction", html! {
@@ -87,45 +79,18 @@ pub async fn create_page(
                         page-header-subtitle { "Record a new stock transaction" }
                     }
 
-                    @match flash {
-                        Some(flash) => {
-                            @if let Some(structured_error) = CreateTransactionFormError::from_flash_message(flash.message()) {
-                                @match structured_error {
-                                    CreateTransactionFormError::TickerNotFound { symbol, suggestions, .. } => {
-                                        alert data-alert-type="warning" {
-                                            p {
-                                                strong { "Error: " }
-                                                "Ticker symbol '"
-                                                (symbol)
-                                                "' not found."
-                                            }
-
-                                            @if !suggestions.is_empty() {
-                                                h4 class="suggestion-title" { "Did you mean one of these?" }
-
-                                                suggestions-list {
-                                                    @for suggestion in &suggestions {
-                                                        suggestion-item {
-                                                            suggestion-symbol { (suggestion.symbol) }
-                                                            suggestion-name { (suggestion.name) }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            } @else {
-                                // Regular error message
-                                alert data-alert-type="warning" {
-                                    p {
-                                        strong { "Error: " }
-                                        (flash.message())
-                                    }
+                    @let has_errors = form_context.context.errors().count() > 0;
+                    @if has_errors {
+                        alert data-alert-type="error" {
+                            p {
+                                strong { "Please fix the following errors:" }
+                            }
+                            ul {
+                                @for error in form_context.context.errors() {
+                                    li { (error) }
                                 }
                             }
                         }
-                        None => { /* No flash message to display */ }
                     }
 
                     form method="post" action="/transactions/create" class="form-card" {
@@ -144,12 +109,11 @@ pub async fn create_page(
                                         id="account_id"
                                         name="account_id"
                                         required {
-                                            option value="" disabled selected { "Select an account" }
+                                            option value="" disabled { "Select an account" }
                                             @for account in accounts {
                                                 @let account_id = account.id.unwrap_or(0);
-                                                @let is_selected = form_data
-                                                    .as_ref()
-                                                    .map_or(false, |data| data.account_id == account_id);
+                                                @let is_selected = form_context.context.field_value("account_id")
+                                                    .map_or(false, |val| val == account_id.to_string());
                                                 @if is_selected {
                                                     option value=(account_id) selected { (account.name) }
                                                 } @else {
@@ -163,12 +127,10 @@ pub async fn create_page(
                             form-field {
                                 label { "Transaction Type" }
                                 radio-group {
-                                    @let buy_checked = form_data
-                                        .as_ref()
-                                        .map_or(false, |data| data.transaction_type == "buy");
-                                    @let sell_checked = form_data
-                                        .as_ref()
-                                        .map_or(false, |data| data.transaction_type == "sell");
+                                    @let transaction_type_value = form_context.context.field_value("transaction_type")
+                                        .unwrap_or("");
+                                    @let buy_checked = transaction_type_value == "buy";
+                                    @let sell_checked = transaction_type_value == "sell";
 
                                     radio-option class="buy-option" {
                                         @if buy_checked {
@@ -195,9 +157,8 @@ pub async fn create_page(
 
                             form-field {
                                 label for="ticker_symbol" { "Ticker Symbol" }
-                                @let ticker_value = form_data
-                                    .as_ref()
-                                    .map_or("", |data| &data.ticker_symbol);
+                                @let ticker_value = form_context.context.field_value("ticker_symbol")
+                                    .unwrap_or("");
                                 input
                                     type="text"
                                     id="ticker_symbol"
@@ -207,12 +168,35 @@ pub async fn create_page(
                                     placeholder="e.g., AAPL, MSFT";
                             }
 
+                            @if let Some((invalid_symbol, suggestions)) = ticker_error {
+                                alert data-alert-type="warning" {
+                                    p {
+                                        strong { "Error: " }
+                                        "Ticker symbol '"
+                                        (invalid_symbol)
+                                        "' not found."
+                                    }
+
+                                    @if !suggestions.is_empty() {
+                                        h4 class="suggestion-title" { "Did you mean one of these?" }
+
+                                        suggestions-list {
+                                            @for suggestion in suggestions.iter().take(3) {
+                                                suggestion-item {
+                                                    suggestion-symbol { (suggestion.symbol) }
+                                                    suggestion-name { (suggestion.name) }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
                             form-row {
                                 form-field {
                                     label for="share_quantity" { "Shares" }
-                                    @let shares_value = form_data
-                                        .as_ref()
-                                        .map_or(String::new(), |data| data.share_quantity.to_string());
+                                    @let shares_value = form_context.context.field_value("share_quantity")
+                                        .unwrap_or("");
                                     input
                                         type="number"
                                         id="share_quantity"
@@ -226,9 +210,8 @@ pub async fn create_page(
 
                                 form-field {
                                     label for="price_per_share" { "Price per Share" }
-                                    @let price_value = form_data
-                                        .as_ref()
-                                        .map_or(String::new(), |data| data.price_per_share.to_string());
+                                    @let price_value = form_context.context.field_value("price_per_share")
+                                        .unwrap_or("");
                                     input
                                         type="number"
                                         id="price_per_share"
@@ -244,9 +227,8 @@ pub async fn create_page(
                             form-row {
                                 form-field {
                                     label for="currency" { "Currency" }
-                                    @let selected_currency = form_data
-                                        .as_ref()
-                                        .map_or("EUR", |data| &data.currency);
+                                    @let selected_currency = form_context.context.field_value("currency")
+                                        .unwrap_or("EUR");
                                     select
                                         id="currency"
                                         name="currency"
@@ -263,9 +245,8 @@ pub async fn create_page(
 
                                 form-field {
                                     label for="fees" { "Fees" }
-                                    @let fees_value = form_data
-                                        .as_ref()
-                                        .map_or("0".to_string(), |data| data.fees.to_string());
+                                    @let fees_value = form_context.context.field_value("fees")
+                                        .unwrap_or("0");
                                     input
                                         type="number"
                                         id="fees"
@@ -279,9 +260,8 @@ pub async fn create_page(
 
                             form-field {
                                 label for="date" { "Transaction Date" }
-                                @let date_value = form_data
-                                    .as_ref()
-                                    .map_or("", |data| &data.date);
+                                @let date_value = form_context.context.field_value("date")
+                                    .unwrap_or("");
                                 input
                                     type="date"
                                     id="date"
@@ -313,35 +293,52 @@ pub async fn create_page(
 /// Handler for transaction creation form submission.
 #[post("/transactions/create", data = "<form>")]
 pub async fn create_submit(
-    form: Form<TransactionForm>,
+    form: Form<Contextual<'_, TransactionForm>>,
     db_state: &State<CoreState>,
     auth_user: CookieAuthenticatedUser<'_>,
-) -> Result<Redirect, Flash<Redirect>> {
-    // Convert string transaction type to enum
-    let transaction_type = match form.transaction_type.as_str() {
-        "buy" => TransactionType::Buy,
-        "sell" => TransactionType::Sell,
-        _ => {
-            return Err(Flash::error(
-                Redirect::to("/transactions/create"),
-                "Invalid transaction type selected.",
-            ));
+) -> Result<Redirect, (Status, Markup)> {
+    let form_data = match &form.value {
+        Some(data) => data,
+        None => {
+            // Form has validation errors, render the form page with errors.
+            let accounts = match Account::for_user(&db_state.pool, auth_user.user_id).await {
+                Ok(accounts) => accounts,
+                Err(_) => return Err((Status::InternalServerError, html! { "Database error" })),
+            };
+            match render_form(accounts, &form) {
+                Ok(markup) => return Err((Status::UnprocessableEntity, markup)),
+                Err(_) => return Err((Status::InternalServerError, html! { "Template error" })),
+            }
         }
     };
 
-    // Create the transaction data
-    let transaction_data = TransactionData {
-        account_id: form.account_id,
-        transaction_type,
-        price_per_share: form.price_per_share,
-        share_quantity: form.share_quantity,
-        fees: form.fees,
-        currency: form.currency.clone(),
-        ticker_symbol: form.ticker_symbol.clone(),
-        date: form.date.clone(),
+    let transaction_type = match form_data.transaction_type.as_str() {
+        "buy" => TransactionType::Buy,
+        "sell" => TransactionType::Sell,
+        _ => {
+            // Couldn't parse transaction type, re-render with errors.
+            let accounts = match Account::for_user(&db_state.pool, auth_user.user_id).await {
+                Ok(accounts) => accounts,
+                Err(_) => return Err((Status::InternalServerError, html! { "Database error" })),
+            };
+            match render_form(accounts, &form) {
+                Ok(markup) => return Err((Status::UnprocessableEntity, markup)),
+                Err(_) => return Err((Status::InternalServerError, html! { "Template error" })),
+            }
+        }
     };
 
-    // Create the transaction with market provider validation
+    let transaction_data = TransactionData {
+        account_id: form_data.account_id,
+        transaction_type,
+        price_per_share: form_data.price_per_share,
+        share_quantity: form_data.share_quantity,
+        fees: form_data.fees,
+        currency: form_data.currency.clone(),
+        ticker_symbol: form_data.ticker_symbol.clone(),
+        date: form_data.date.clone(),
+    };
+
     match create_transaction(
         &db_state.pool,
         db_state.market_provider.as_ref(),
@@ -350,57 +347,71 @@ pub async fn create_submit(
     )
     .await
     {
-        Ok(_) => {
-            // Redirect to transactions list on success
-            Ok(Redirect::to("/transactions"))
-        }
-        Err(CreateTransactionError::TickerSymbolNotFound {
-            symbol,
-            suggestions,
-        }) => {
-            // Create a structured error with form data preservation
-            let structured_error = CreateTransactionFormError::TickerNotFound {
-                symbol,
-                suggestions: suggestions.into_iter().take(3).collect(),
-                form_data: form.into_inner(),
+        Ok(_) => Ok(Redirect::to("/transactions")),
+        Err(error) => {
+            let accounts = match Account::for_user(&db_state.pool, auth_user.user_id).await {
+                Ok(accounts) => accounts,
+                Err(_) => return Err((Status::InternalServerError, html! { "Database error" })),
             };
 
-            Err(Flash::error(
-                Redirect::to("/transactions/create"),
-                structured_error.to_flash_message(),
-            ))
+            let mut error_form = form.into_inner();
+
+            match error {
+                CreateTransactionError::TickerSymbolNotFound {
+                    symbol,
+                    suggestions,
+                } => {
+                    match render_form_with_ticker_error(
+                        accounts,
+                        &error_form,
+                        &symbol,
+                        &suggestions,
+                    ) {
+                        Ok(markup) => return Err((Status::UnprocessableEntity, markup)),
+                        Err(_) => {
+                            return Err((Status::InternalServerError, html! { "Template error" }));
+                        }
+                    }
+                }
+                _ => {
+                    let error_message = match error {
+                        CreateTransactionError::InvalidPricePerShare => {
+                            "Price per share must be greater than 0."
+                        }
+                        CreateTransactionError::InvalidShareQuantity => {
+                            "Share quantity must be greater than 0."
+                        }
+                        CreateTransactionError::InvalidCurrency => "Invalid currency selected.",
+                        CreateTransactionError::InvalidTickerSymbol => {
+                            "Ticker symbol cannot be empty."
+                        }
+                        CreateTransactionError::InvalidDate => {
+                            "Invalid date format. Please use YYYY-MM-DD."
+                        }
+                        CreateTransactionError::AccountNotFound => {
+                            "The selected account was not found."
+                        }
+                        CreateTransactionError::MarketDataUnavailable => {
+                            "Market data service is currently unavailable. Please try again later."
+                        }
+                        CreateTransactionError::DatabaseError(_) => {
+                            "A database error occurred. Please try again."
+                        }
+                        CreateTransactionError::TickerSymbolNotFound { .. } => unreachable!(),
+                    };
+
+                    error_form
+                        .context
+                        .push_error(rocket::form::Error::validation(error_message));
+
+                    match render_form(accounts, &error_form) {
+                        Ok(markup) => return Err((Status::UnprocessableEntity, markup)),
+                        Err(_) => {
+                            return Err((Status::InternalServerError, html! { "Template error" }));
+                        }
+                    }
+                }
+            }
         }
-        Err(CreateTransactionError::InvalidPricePerShare) => Err(Flash::error(
-            Redirect::to("/transactions/create"),
-            "Price per share must be greater than 0.",
-        )),
-        Err(CreateTransactionError::InvalidShareQuantity) => Err(Flash::error(
-            Redirect::to("/transactions/create"),
-            "Share quantity must be greater than 0.",
-        )),
-        Err(CreateTransactionError::InvalidCurrency) => Err(Flash::error(
-            Redirect::to("/transactions/create"),
-            "Invalid currency selected.",
-        )),
-        Err(CreateTransactionError::InvalidTickerSymbol) => Err(Flash::error(
-            Redirect::to("/transactions/create"),
-            "Ticker symbol cannot be empty.",
-        )),
-        Err(CreateTransactionError::InvalidDate) => Err(Flash::error(
-            Redirect::to("/transactions/create"),
-            "Invalid date format. Please use YYYY-MM-DD.",
-        )),
-        Err(CreateTransactionError::AccountNotFound) => Err(Flash::error(
-            Redirect::to("/transactions/create"),
-            "The selected account was not found.",
-        )),
-        Err(CreateTransactionError::MarketDataUnavailable) => Err(Flash::error(
-            Redirect::to("/transactions/create"),
-            "Market data service is currently unavailable. Please try again later.",
-        )),
-        Err(CreateTransactionError::DatabaseError(_)) => Err(Flash::error(
-            Redirect::to("/transactions/create"),
-            "A database error occurred. Please try again.",
-        )),
     }
 }
