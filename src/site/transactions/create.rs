@@ -131,6 +131,7 @@ fn render_form_internal(
                                         .unwrap_or("");
                                     @let buy_checked = transaction_type_value == "buy";
                                     @let sell_checked = transaction_type_value == "sell";
+                                    @let transfer_checked = transaction_type_value == "transfer";
 
                                     radio-option class="buy-option" {
                                         @if buy_checked {
@@ -150,6 +151,16 @@ fn render_form_internal(
                                         }
                                         label for="sell" {
                                             "Sell"
+                                        }
+                                    }
+                                    radio-option class="transfer-option" {
+                                        @if transfer_checked {
+                                            input type="radio" id="transfer" name="transaction_type" value="transfer" required checked;
+                                        } @else {
+                                            input type="radio" id="transfer" name="transaction_type" value="transfer" required;
+                                        }
+                                        label for="transfer" {
+                                            "Transfer"
                                         }
                                     }
                                 }
@@ -317,6 +328,7 @@ pub async fn create_submit(
     let transaction_type = match form_data.transaction_type.as_str() {
         "buy" => TransactionType::Buy,
         "sell" => TransactionType::Sell,
+        "transfer" => TransactionType::Transfer,
         _ => {
             // Couldn't parse transaction type, re-render with errors.
             let accounts = match Account::for_user(&db_state.pool, auth_user.user_id).await {

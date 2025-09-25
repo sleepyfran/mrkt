@@ -42,8 +42,13 @@ pub async fn create_transaction(
     belonging_to_user_id: TransactionId,
     data: &TransactionData,
 ) -> Result<Transaction, CreateTransactionError> {
-    validate_greater_than(data.price_per_share, 0.0)
-        .map_err(|_| CreateTransactionError::InvalidPricePerShare)?;
+    // For transfers, price per share can be 0 (since they're free stock grants/deliveries)
+    // For buy/sell transactions, price must be greater than 0.
+    if !matches!(data.transaction_type, TransactionType::Transfer) {
+        validate_greater_than(data.price_per_share, 0.0)
+            .map_err(|_| CreateTransactionError::InvalidPricePerShare)?;
+    }
+
     validate_greater_than(data.share_quantity, 0.0)
         .map_err(|_| CreateTransactionError::InvalidShareQuantity)?;
     // TODO: Validate that the currency is a valid ISO 4217 code.
@@ -53,16 +58,16 @@ pub async fn create_transaction(
     let date =
         validate_is_valid_date(&data.date).map_err(|_| CreateTransactionError::InvalidDate)?;
 
-    // Validate ticker symbol exists in market data
+    // Validate ticker symbol exists in market data.
     match market_provider.get_stock_prices(&data.ticker_symbol).await {
         Ok(_) => {
-            // Ticker symbol is valid, continue
+            // Ticker symbol is valid, continue.
         }
         Err(_) => {
-            // Ticker symbol not found, try to find suggestions
+            // Ticker symbol not found, try to find suggestions.
             match market_provider.search_symbols(&data.ticker_symbol).await {
                 Ok(suggestions) => {
-                    // Take up to 5 best matches based on score
+                    // Take up to 5 best matches based on score.
                     let mut sorted_suggestions = suggestions;
                     sorted_suggestions.sort_by(|a, b| {
                         b.match_score
@@ -77,7 +82,6 @@ pub async fn create_transaction(
                     });
                 }
                 Err(_) => {
-                    // Market data service unavailable
                     return Err(CreateTransactionError::MarketDataUnavailable);
                 }
             }

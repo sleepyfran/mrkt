@@ -8,11 +8,12 @@ use crate::{
 
 pub type TransactionId = i64;
 
-/// Whether the transaction is a buy or sell.
+/// The type of transaction - buy, sell, or transfer (stock delivery/grant).
 #[derive(Clone, Copy, Deserialize, Serialize, Debug)]
 pub enum TransactionType {
     Buy = 0,
     Sell = 1,
+    Transfer = 2,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -136,6 +137,7 @@ impl Transaction {
                     transaction_type: match row.transaction_type {
                         0 => TransactionType::Buy,
                         1 => TransactionType::Sell,
+                        2 => TransactionType::Transfer,
                         _ => panic!("Invalid transaction type in database"),
                     },
                     transaction_date: parsed_date,
@@ -181,6 +183,7 @@ impl Transaction {
                     transaction_type: match row.transaction_type {
                         0 => TransactionType::Buy,
                         1 => TransactionType::Sell,
+                        2 => TransactionType::Transfer,
                         _ => panic!("Invalid transaction type in database"),
                     },
                     transaction_date: parsed_date,
@@ -223,6 +226,7 @@ impl Transaction {
                 transaction_type: match row.transaction_type {
                     0 => TransactionType::Buy,
                     1 => TransactionType::Sell,
+                    2 => TransactionType::Transfer,
                     _ => panic!("Invalid transaction type in database"),
                 },
                 transaction_date: parsed_date,

@@ -1,0 +1,250 @@
+/* Configuration Page Styles */
+
+/* Configuration Sections */
+configuration-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+configuration-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+configuration-section h3 {
+  color: var(--color-text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+configuration-section > p {
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Configuration Cards */
+configuration-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+configuration-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border-primary);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+configuration-card:hover {
+  border-color: var(--color-accent-primary);
+  box-shadow: 0 4px 12px rgba(79, 178, 134, 0.15);
+  transform: translateY(-2px);
+}
+
+configuration-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+configuration-card-header h4 {
+  color: var(--color-text-primary);
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+configuration-card-header p {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+configuration-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-grow: 1;
+}
+
+configuration-card-details p {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+configuration-card-details strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+configuration-card-actions .button {
+  flex: 1;
+  text-align: center;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+configuration-card-actions .button-primary {
+  background-color: var(--color-button-primary);
+  color: var(--color-button-text-on-primary);
+}
+
+configuration-card-actions .button-primary:hover {
+  background-color: var(--color-button-primary-hover);
+  color: var(--color-button-text-on-primary);
+  transform: translateY(-1px);
+}
+
+configuration-card-actions .button-secondary {
+  background-color: var(--color-button-secondary);
+  color: var(--color-button-text-on-secondary);
+}
+
+configuration-card-actions .button-secondary:hover {
+  background-color: var(--color-button-secondary-hover);
+  color: var(--color-button-text-on-secondary);
+  transform: translateY(-1px);
+}
+
+/* Provider Selection Page */
+provider-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+provider-selection h3 {
+  color: var(--color-text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+provider-selection > p {
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+provider-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+/* Import Info Section */
+import-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border-primary);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+
+import-info h3,
+import-info h4 {
+  color: var(--color-text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+import-info h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+import-info h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 1rem;
+}
+
+import-info p {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+import-info ul {
+  margin: 0.5rem 0 0 1.5rem;
+  padding: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+import-info li {
+  margin-bottom: 0.25rem;
+}
+
+import-info strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+/* Field Help Text */
+.field-help {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  configuration-cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  provider-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  configuration-card {
+    padding: 1.25rem;
+  }
+
+  configuration-card-actions {
+    flex-direction: column;
+  }
+
+  configuration-card-actions .button {
+    flex: none;
+  }
+}
+
+@media (max-width: 480px) {
+  configuration-card {
+    padding: 1rem;
+  }
+
+  import-info {
+    padding: 1rem;
+  }
+}

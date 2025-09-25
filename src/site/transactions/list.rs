@@ -59,6 +59,7 @@ fn render_transactions(
                         @let total_transactions = transactions.len();
                         @let buy_count = transactions.iter().filter(|t| matches!(t.transaction_type, TransactionType::Buy)).count();
                         @let sell_count = transactions.iter().filter(|t| matches!(t.transaction_type, TransactionType::Sell)).count();
+                        @let transfer_count = transactions.iter().filter(|t| matches!(t.transaction_type, TransactionType::Transfer)).count();
 
                         section-controls {
                             h2 { "Transaction History" }
@@ -79,6 +80,10 @@ fn render_transactions(
                             div {
                                 h4 { "Sell Orders" }
                                 p { (sell_count) }
+                            }
+                            div {
+                                h4 { "Transfers" }
+                                p { (transfer_count) }
                             }
                         }
 
@@ -113,6 +118,11 @@ fn render_transactions(
                                                     TransactionType::Sell => {
                                                         status-badge data-variant="danger" {
                                                             "Sell"
+                                                        }
+                                                    }
+                                                    TransactionType::Transfer => {
+                                                        status-badge data-variant="secondary" {
+                                                            "Transfer"
                                                         }
                                                     }
                                                 }

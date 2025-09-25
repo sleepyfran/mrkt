@@ -9,6 +9,7 @@ pub enum NavSection {
     Instruments,
     Transactions,
     Accounts,
+    Configuration,
     UserManagement,
 }
 
@@ -132,6 +133,7 @@ impl<'a> Render for Shell<'a> {
                                 li { a data-active=(self.section == NavSection::Instruments) href="/instruments" { "Instruments" } }
                                 li { a data-active=(self.section == NavSection::Transactions) href="/transactions" { "Transactions" } }
                                 li { a data-active=(self.section == NavSection::Accounts) href="/accounts" { "Accounts" } }
+                                li { a data-active=(self.section == NavSection::Configuration) href="/configuration" { "Configuration" } }
                             }
                         }
                     }

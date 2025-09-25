@@ -3,6 +3,7 @@ pub mod auth;
 mod cache;
 pub mod data_sources;
 mod db;
+pub mod import;
 mod logger;
 pub mod portfolio;
 pub mod shared;

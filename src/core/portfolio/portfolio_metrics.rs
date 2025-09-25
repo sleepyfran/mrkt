@@ -175,6 +175,12 @@ impl PortfolioMetrics {
                     total_invested += transaction_value;
                     *account_values.entry(account_id).or_insert(0.0) += transaction_value;
                 }
+                TransactionType::Transfer => {
+                    // For transfers, we only add shares but no cost (since it's a free transfer/grant)
+                    position.0 += transaction.share_quantity; // shares
+                    position.2 += eur_fees; // fees (if any)
+                    // Don't add to total_invested or account_values since it's not a purchase
+                }
                 TransactionType::Sell => {
                     // Calculate the proportional cost to subtract based on average cost
                     let current_shares = position.0; // shares before this sell
