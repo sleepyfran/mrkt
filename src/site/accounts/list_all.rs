@@ -1,5 +1,5 @@
 use maud::{Markup, html};
-use rocket::{State, http::Status};
+use rocket::{State, http::Status, request::FlashMessage};
 
 use crate::{
     core::{
@@ -25,6 +25,7 @@ impl_responder! {
 pub async fn list_all(
     db_state: &State<CoreState>,
     auth_user: CookieAuthenticatedUser<'_>,
+    flash: Option<FlashMessage<'_>>,
 ) -> Result<Markup, ListAllAccountsError> {
     let accounts = list_all_accounts(&db_state.pool, auth_user.user_id).await?;
 
@@ -85,10 +86,19 @@ pub async fn list_all(
                                                 td {
                                                     (format_relative_date(account.created_at))
                                                 }
-                                                td {
+                                                td class="actions" {
                                                     @if let Some(id) = account.id {
                                                         a href=(uri!(transactions::list::list_by_account(id))) class="table-action" {
                                                             "View Transactions"
+                                                        }
+                                                        " "
+                                                        form method="post" action=(format!("/accounts/{}/delete", id)) style="display: inline;"
+                                                             onsubmit="return confirm('Are you sure you want to delete this account? This action cannot be undone.');" {
+                                                            form-submit data-size="small" data-variant="danger" {
+                                                                input
+                                                                    type="submit"
+                                                                    value="Delete";
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -101,6 +111,7 @@ pub async fn list_all(
                     }
                 }
             )
+            .attach_flash(flash)
         )
     })
 }

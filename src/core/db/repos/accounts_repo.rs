@@ -83,4 +83,19 @@ impl Account {
             })
             .collect())
     }
+
+    /// Deletes an account by its ID.
+    pub async fn delete(pool: &Pool, id: AccountId) -> Result<(), DatabaseError> {
+        sqlx::query!(
+            r#"
+                DELETE FROM accounts
+                WHERE id = $1
+            "#,
+            id
+        )
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
 }

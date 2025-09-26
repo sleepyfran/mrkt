@@ -15,7 +15,7 @@ CREATE TABLE sessions (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     expires_at DATETIME NOT NULL DEFAULT (datetime('now', '+6 months')),
 
-    FOREIGN KEY(user_id) REFERENCES users(id)
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Index to query sessions by user_id.
@@ -33,7 +33,7 @@ CREATE TABLE accounts (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY(owner_id) REFERENCES users(id)
+    FOREIGN KEY(owner_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- ================== TRANSACTIONS.
@@ -51,8 +51,8 @@ CREATE TABLE transactions (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY(owner_id) REFERENCES users(id)
-    FOREIGN KEY(account_id) REFERENCES accounts(id)
+    FOREIGN KEY(owner_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE CASCADE
 );
 
 -- Index for querying by owner_id.

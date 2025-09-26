@@ -630,6 +630,16 @@ table[data-table="content"] td {
   font-size: 0.9rem;
 }
 
+table[data-table="content"] td.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+table[data-table="content"] td.actions > * {
+  margin: 0;
+}
+
 /* Badge Components */
 status-badge {
   display: inline-block;
