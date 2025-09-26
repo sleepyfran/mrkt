@@ -299,7 +299,7 @@ fn render_form_internal(
 
                     import-hint {
                         p class="hint-text" {
-                            "💡 " 
+                            "💡 "
                             strong { "Tip: " }
                             "Have multiple transactions to add? You can "
                             a href="/configuration/import" { "import them from a CSV file" }

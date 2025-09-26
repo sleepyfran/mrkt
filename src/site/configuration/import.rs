@@ -49,20 +49,22 @@ pub async fn import_selection_page(
             page-header-subtitle { "Choose the source of your transaction data" }
         }
 
-        form-container {
-            @if let Some(ref flash_msg) = flash {
-                @if flash_msg.kind() == "error" {
+        @if let Some(ref flash_msg) = flash {
+            @if flash_msg.kind() == "error" {
+                form-container {
                     alert data-alert-type="error" {
                         p { (flash_msg.message()) }
                     }
                 }
             }
+        }
 
-            provider-selection {
+        configuration-sections {
+            configuration-section {
                 h3 { "Available Import Sources" }
                 p { "Select the application or service you want to import transaction data from:" }
                 
-                provider-grid {
+                configuration-cards {
                     @for provider in &provider_infos {
                         configuration-card {
                             configuration-card-header {
