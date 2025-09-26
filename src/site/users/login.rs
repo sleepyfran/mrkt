@@ -9,7 +9,7 @@ use rocket::{
 
 use crate::{
     core::{
-        auth::{LoginError, login},
+        auth::{LoginError, has_any_user, login},
         state::CoreState,
     },
     site::{
@@ -33,8 +33,16 @@ pub async fn login_redirect(_user: CookieAuthenticatedUser<'_>) -> Redirect {
 
 /// Renders the login page.
 #[get("/login", rank = 2)]
-pub async fn login_page(flash: Option<FlashMessage<'_>>) -> Markup {
-    html! {
+pub async fn login_page(
+    state: &State<CoreState>,
+    flash: Option<FlashMessage<'_>>,
+) -> Result<Markup, Redirect> {
+    if !has_any_user(&state.pool).await {
+        // If there are no users, no point in showing the login page.
+        return Err(Redirect::to("/register"));
+    }
+
+    Ok(html! {
         (
             Shell::create(NavSection::UserManagement, "Login", html! {
                 form-container {
@@ -96,7 +104,7 @@ pub async fn login_page(flash: Option<FlashMessage<'_>>) -> Markup {
                 }
             }).hide_header()
         )
-    }
+    })
 }
 
 /// Handler for login form submission, processes the login and sets a session cookie.

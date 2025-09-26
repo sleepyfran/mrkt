@@ -48,4 +48,18 @@ impl User {
         .fetch_optional(pool)
         .await
     }
+
+    /// Returns the total count of users in the database.
+    pub async fn count(pool: &SqlitePool) -> Result<i64, sqlx::Error> {
+        let count_result = sqlx::query!(
+            r#"
+                SELECT COUNT(*) as count
+                FROM users
+            "#
+        )
+        .fetch_one(pool)
+        .await?;
+
+        Ok(count_result.count)
+    }
 }

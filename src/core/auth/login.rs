@@ -31,3 +31,11 @@ pub async fn login(pool: &Pool, username: &str, password: &str) -> Result<Token,
         Err(LoginError::InvalidCredentials)
     }
 }
+
+/// Checks if there are any users registered in the system.
+pub async fn has_any_user(pool: &Pool) -> bool {
+    match User::count(pool).await {
+        Ok(count) => count > 0,
+        Err(_) => false, // Return false on error to avoid blocking access.
+    }
+}
