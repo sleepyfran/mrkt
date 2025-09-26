@@ -47,8 +47,8 @@ pub async fn login_page(
             Shell::create(NavSection::UserManagement, "Login", html! {
                 form-container {
                     page-header {
-                        page-header-title { "Sign in to your account" }
-                        page-header-subtitle { "Welcome back to mrkt" }
+                        page-header-title { "Welcome back to mrkt" }
+                        page-header-subtitle { "We need your credentials to continue :^)" }
                     }
 
                     @match flash {
@@ -72,7 +72,7 @@ pub async fn login_page(
                                     id="username"
                                     name="username"
                                     required
-                                    placeholder="Enter your username";
+                                    placeholder="Your username";
                             }
 
                             form-field {
@@ -82,22 +82,22 @@ pub async fn login_page(
                                     id="password"
                                     name="password"
                                     required
-                                    placeholder="Enter your password";
+                                    placeholder="Your password";
                             }
                         }
 
                         form-submit {
                             input
                                 type="submit"
-                                value="Sign in";
+                                value="Let's go!";
                         }
                     }
 
                     div {
                         p {
-                            "Don't have an account? "
+                            "New here? "
                             a href="/register" {
-                                "Sign up"
+                                "Set up your account"
                             }
                         }
                     }

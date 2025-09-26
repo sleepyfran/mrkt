@@ -40,8 +40,8 @@ pub async fn register_page(flash: Option<FlashMessage<'_>>) -> Markup {
             Shell::create(NavSection::UserManagement, "Register", html! {
                 form-container {
                     page-header {
-                        page-header-title { "Create your account" }
-                        page-header-subtitle { "Join mrkt and start tracking your investments" }
+                        page-header-title { "Let's get you set up!" }
+                        page-header-subtitle { "Create your account and start tracking your investments" }
                     }
 
                     @match flash {
@@ -65,7 +65,7 @@ pub async fn register_page(flash: Option<FlashMessage<'_>>) -> Markup {
                                     id="username"
                                     name="username"
                                     required
-                                    placeholder="Choose a username";
+                                    placeholder="Pick a username";
                             }
 
                             form-field {
@@ -76,7 +76,7 @@ pub async fn register_page(flash: Option<FlashMessage<'_>>) -> Markup {
                                     name="password"
                                     required
                                     minlength="8"
-                                    placeholder="Create a password (min 8 characters)";
+                                    placeholder="Make it secure (8+ characters)";
                             }
 
                             form-field {
@@ -86,22 +86,22 @@ pub async fn register_page(flash: Option<FlashMessage<'_>>) -> Markup {
                                     id="confirm_password"
                                     name="confirm_password"
                                     required
-                                    placeholder="Confirm your password";
+                                    placeholder="Same password again";
                             }
                         }
 
                         form-submit {
                             input
                                 type="submit"
-                                value="Create Account";
+                                value="Get started!";
                         }
                     }
 
                     div {
                         p {
-                            "Already have an account? "
+                            "Already set up? "
                             a href="/login" {
-                                "Sign in"
+                                "Log in"
                             }
                         }
                     }
