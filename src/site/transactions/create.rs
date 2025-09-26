@@ -296,6 +296,16 @@ fn render_form_internal(
                             "← Back to transactions"
                         }
                     }
+
+                    import-hint {
+                        p class="hint-text" {
+                            "💡 " 
+                            strong { "Tip: " }
+                            "Have multiple transactions to add? You can "
+                            a href="/configuration/import" { "import them from a CSV file" }
+                            " instead of entering them one by one."
+                        }
+                    }
                 }
             }).add_stylesheet("transactions.css")
               .add_script("ticker-suggestions.js")
