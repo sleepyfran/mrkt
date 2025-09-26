@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                INSERT INTO accounts (owner_id, name)\n                VALUES ($1, $2)\n                RETURNING id, created_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 1,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      false
+    ]
+  },
+  "hash": "e1964bb12991aa24c7822e4db385315abcee242dc23e5e82bb42c06c79a83935"
+}

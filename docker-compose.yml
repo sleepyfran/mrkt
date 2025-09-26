@@ -1,0 +1,16 @@
+services:
+  mrkt:
+    build: .
+    ports:
+      # If you change the host port (remember, `host:container`), you must also change it in the Rocket.toml file.
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - OPENEXCHANGERATES_APP_ID=${OPENEXCHANGERATES_APP_ID}
+      - ALPHAVANTAGE_API_KEY=${ALPHAVANTAGE_API_KEY}
+    volumes:
+      - mrkt-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  mrkt-data:

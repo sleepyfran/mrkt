@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                INSERT INTO sessions (user_id, token)\n                VALUES ($1, $2)\n                RETURNING id, expires_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "expires_at",
+        "ordinal": 1,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      false
+    ]
+  },
+  "hash": "bc506e4103561253dbeef096872b0b359f033b9ce3a2761f67010e93423ac26b"
+}

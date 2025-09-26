@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                INSERT INTO transactions (\n                    owner_id,\n                    account_id,\n                    transaction_type,\n                    transaction_date,\n                    ticker_symbol,\n                    quantity,\n                    price_per_share,\n                    currency,\n                    fees\n                ) VALUES (\n                    $1,\n                    $2,\n                    $3,\n                    $4,\n                    $5,\n                    $6,\n                    $7,\n                    $8,\n                    $9\n                )\n                RETURNING id, created_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 1,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": [
+      true,
+      false
+    ]
+  },
+  "hash": "656d91e0f88b0e3d4cd6f4a7cff75417aa2feb4a62f0e05a72fd85da99f1d055"
+}

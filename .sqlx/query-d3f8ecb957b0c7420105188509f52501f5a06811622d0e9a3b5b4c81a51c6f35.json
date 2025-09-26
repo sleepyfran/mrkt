@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                SELECT *\n                FROM accounts\n                WHERE owner_id = $1\n                ORDER BY name\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "owner_id",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 3,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 4,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d3f8ecb957b0c7420105188509f52501f5a06811622d0e9a3b5b4c81a51c6f35"
+}

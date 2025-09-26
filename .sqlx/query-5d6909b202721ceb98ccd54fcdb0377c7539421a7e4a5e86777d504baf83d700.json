@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                SELECT * FROM sessions\n                WHERE token = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "user_id",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "token",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 3,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "expires_at",
+        "ordinal": 4,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "5d6909b202721ceb98ccd54fcdb0377c7539421a7e4a5e86777d504baf83d700"
+}

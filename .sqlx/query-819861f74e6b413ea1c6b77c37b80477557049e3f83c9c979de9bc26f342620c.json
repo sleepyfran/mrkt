@@ -1,0 +1,86 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                SELECT *\n                FROM transactions\n                WHERE id = $1 AND owner_id = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "owner_id",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "account_id",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "transaction_type",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "ticker_symbol",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "transaction_date",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "quantity",
+        "ordinal": 6,
+        "type_info": "Float"
+      },
+      {
+        "name": "price_per_share",
+        "ordinal": 7,
+        "type_info": "Float"
+      },
+      {
+        "name": "currency",
+        "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "fees",
+        "ordinal": 9,
+        "type_info": "Float"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 10,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 11,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "819861f74e6b413ea1c6b77c37b80477557049e3f83c9c979de9bc26f342620c"
+}
