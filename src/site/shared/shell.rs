@@ -141,6 +141,8 @@ impl<'a> Render for Shell<'a> {
                 main {
                     (self.content)
                 }
+                script src="/public/site.js" {}
+
                 @for script in &self.extra_scripts {
                     script src={ "/public/"(script) } {}
                 }
