@@ -60,6 +60,18 @@ body {
   font-family: var(--font-family);
 }
 
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (max-width: 768px) {
+  main {
+    padding: 0 0.5rem;
+  }
+}
+
 a {
   color: var(--color-button-primary);
   text-decoration: none;
