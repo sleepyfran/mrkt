@@ -14,7 +14,7 @@ use crate::{
     },
     site::{
         auth_guard::CookieAuthenticatedUser,
-        shared::{NavSection, Shell},
+        shared::{NavSection, Shell, ShellFlash},
     },
 };
 
@@ -42,18 +42,6 @@ pub async fn register_page(flash: Option<FlashMessage<'_>>) -> Markup {
                     page-header {
                         page-header-title { "Let's get you set up!" }
                         page-header-subtitle { "Create your account and start tracking your investments" }
-                    }
-
-                    @match flash {
-                        Some(flash) => {
-                            alert data-alert-type="warning" {
-                                p {
-                                    strong { "Error: " }
-                                    (flash.message())
-                                }
-                            }
-                        }
-                        None => { /* No flash message to display */ }
                     }
 
                     form method="post" action="/register" class="form-card" {
@@ -106,7 +94,9 @@ pub async fn register_page(flash: Option<FlashMessage<'_>>) -> Markup {
                         }
                     }
                 }
-            }).hide_header()
+            })
+            .hide_header()
+            .attach_flash(flash)
         )
     }
 }
@@ -116,26 +106,39 @@ pub async fn register_page(flash: Option<FlashMessage<'_>>) -> Markup {
 pub async fn register_submit(
     form: Form<RegisterForm>,
     state: &State<CoreState>,
-) -> Result<Redirect, Flash<Redirect>> {
+) -> Result<Flash<Redirect>, Flash<Redirect>> {
     // Check if passwords match
     if form.password != form.confirm_password {
         return Err(Flash::error(
             Redirect::to("/register"),
-            "Passwords do not match",
+            ShellFlash::to_flash_message("Passwords do not match"),
         ));
     }
 
     match register(&state.pool, &form.username, &form.password).await {
-        Ok(()) => {
-            // Registration successful, redirect to login page
-            Ok(Redirect::to("/login"))
-        }
-        Err(RegisterError::InvalidUsername) => Ok(Redirect::to("/register")),
-        Err(RegisterError::InvalidPassword) => Ok(Redirect::to("/register")),
-        Err(RegisterError::UsernameAlreadyExists) => Ok(Redirect::to("/register")),
+        Ok(()) => Ok(Flash::success(
+            Redirect::to("/login"),
+            ShellFlash::to_flash_message("Account created successfully! Please log in."),
+        )),
+        Err(RegisterError::InvalidUsername) => Err(Flash::error(
+            Redirect::to("/register"),
+            ShellFlash::to_flash_message("Invalid username. Please choose a different username."),
+        )),
+        Err(RegisterError::InvalidPassword) => Err(Flash::error(
+            Redirect::to("/register"),
+            ShellFlash::to_flash_message(
+                "Invalid password. Password must be at least 8 characters long.",
+            ),
+        )),
+        Err(RegisterError::UsernameAlreadyExists) => Err(Flash::error(
+            Redirect::to("/register"),
+            ShellFlash::to_flash_message(
+                "Username already exists. Please choose a different username.",
+            ),
+        )),
         Err(RegisterError::InternalServerError) => Err(Flash::error(
             Redirect::to("/register"),
-            "An internal error occurred. Please try again later.",
+            ShellFlash::to_flash_message("An internal error occurred. Please try again later."),
         )),
     }
 }

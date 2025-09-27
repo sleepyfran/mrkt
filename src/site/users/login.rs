@@ -14,7 +14,7 @@ use crate::{
     },
     site::{
         auth_guard::CookieAuthenticatedUser,
-        shared::{NavSection, Shell},
+        shared::{NavSection, Shell, ShellFlash},
     },
 };
 
@@ -51,17 +51,7 @@ pub async fn login_page(
                         page-header-subtitle { "We need your credentials to continue :^)" }
                     }
 
-                    @match flash {
-                        Some(flash) => {
-                            alert data-alert-type="warning" {
-                                p {
-                                    strong { "Error: " }
-                                    (flash.message())
-                                }
-                            }
-                        }
-                        None => { /* No flash message to display */ }
-                    }
+
 
                     form method="post" action="/login" class="form-card" {
                         form-grid {
@@ -102,7 +92,9 @@ pub async fn login_page(
                         }
                     }
                 }
-            }).hide_header()
+            })
+            .hide_header()
+            .attach_flash(flash)
         )
     })
 }
@@ -123,11 +115,13 @@ pub async fn login_submit(
         }
         Err(LoginError::InvalidCredentials) => Err(Flash::error(
             Redirect::to("/login"),
-            "Those credentials are not quite right, try again!",
+            ShellFlash::to_flash_message("Those credentials are not quite right, try again!"),
         )),
         Err(LoginError::DatabaseError(_)) => Err(Flash::error(
             Redirect::to("/login"),
-            "Oops, something went wrong with the server or the database. Try again or check the logs for more details",
+            ShellFlash::to_flash_message(
+                "Oops, something went wrong with the server or the database. Try again or check the logs for more details",
+            ),
         )),
     }
 }
