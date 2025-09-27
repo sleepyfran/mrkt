@@ -1,10 +1,11 @@
 services:
   mrkt:
-    build: .
+    image: ghcr.io/sleepyfran/mrkt:latest
     ports:
-      # If you change the host port (remember, `host:container`), you must also change it in the Rocket.toml file.
+      # If you change the host port (remember, `host:container`), make sure you uncomment the environment variable below to match it.
       - "8000:8000"
     environment:
+      #- ROCKET_PORT=8000
       - DATABASE_URL=${DATABASE_URL}
       - OPENEXCHANGERATES_APP_ID=${OPENEXCHANGERATES_APP_ID}
       - ALPHAVANTAGE_API_KEY=${ALPHAVANTAGE_API_KEY}
