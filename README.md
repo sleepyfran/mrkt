@@ -1,6 +1,6 @@
 # mrkt
 
-A self-hosted portfolio tracker.
+An extremely simple portfolio tracker.
 
 ## 🛠️ Local build
 
