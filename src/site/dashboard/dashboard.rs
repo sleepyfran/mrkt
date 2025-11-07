@@ -25,8 +25,15 @@ pub async fn dashboard(
         .await
         .map_err(|_| ListAllTransactionsError::DatabaseError(sqlx::Error::RowNotFound))?;
 
-    let metrics =
-        PortfolioMetrics::from(&transactions, &accounts, db_state.market_provider.clone(), db_state.exchange_rate_provider.clone()).await;
+    let today = OffsetDateTime::now_utc().date();
+    let metrics = PortfolioMetrics::from(
+        &transactions,
+        &accounts,
+        db_state.market_provider.clone(),
+        db_state.exchange_rate_provider.clone(),
+        today,
+    )
+    .await;
 
     Ok(html! {
         (
@@ -158,6 +165,12 @@ fn activity_summary(metrics: &PortfolioMetrics) -> Markup {
             div {
                 h4 { "Unique Stocks" }
                 p { (metrics.unique_stocks) }
+            }
+            @if metrics.upcoming_vestings > 0 {
+                div {
+                    h4 { "Upcoming Vestings" }
+                    p { (metrics.upcoming_vestings) }
+                }
             }
         }
     }

@@ -1,5 +1,5 @@
 use std::{collections::HashMap, sync::Arc};
-use time::OffsetDateTime;
+use time::{Date, OffsetDateTime};
 
 use crate::core::{
     Account, Transaction, TransactionType,
@@ -20,10 +20,20 @@ struct ProcessedTransactionData {
     pub stock_positions: HashMap<String, StockData>,
     /// Account values: account_id -> total_value
     pub account_values: HashMap<i64, Amount>,
+    /// Account stock counts: account_id -> set of unique ticker symbols
+    pub account_stocks: HashMap<i64, std::collections::HashSet<String>>,
     /// Total amount invested across all transactions (in EUR)
     pub total_invested: Amount,
     /// Total fees paid across all transactions (in EUR)
     pub total_fees: Amount,
+    /// Total number of transactions processed
+    pub total_count: usize,
+    /// Number of buy transactions
+    pub buy_count: usize,
+    /// Number of sell transactions
+    pub sell_count: usize,
+    /// Number of upcoming transactions (future-dated, typically vestings)
+    pub upcoming_vestings: usize,
 }
 
 #[derive(Debug)]
@@ -36,6 +46,7 @@ pub struct PortfolioMetrics {
     pub total_transactions: usize,
     pub buy_transactions: usize,
     pub sell_transactions: usize,
+    pub upcoming_vestings: usize,
     pub unique_stocks: usize,
     pub portfolio_breakdown: Vec<StockPosition>,
     pub account_breakdown: Vec<AccountSummary>,
@@ -79,20 +90,23 @@ pub struct AccountSummary {
 
 impl PortfolioMetrics {
     /// Calculates portfolio metrics from transactions and accounts.
+    /// Only includes transactions with a date before `as_of_date`.
     pub async fn from(
         transactions: &[Transaction],
         accounts: &[Account],
         market_provider: Arc<dyn MarketProvider>,
         exchange_rate_provider: Arc<dyn ExchangeRateProvider>,
+        as_of_date: Date,
     ) -> Self {
         let processed_data = Self::process_transactions(
             transactions,
             market_provider.as_ref(),
             exchange_rate_provider.as_ref(),
+            as_of_date,
         )
         .await;
 
-        let transaction_counts = Self::count_transactions(transactions);
+        let transaction_counts = (processed_data.buy_count, processed_data.sell_count);
 
         let (portfolio_breakdown, total_current_value, portfolio_last_updated) =
             Self::build_portfolio_breakdown(
@@ -105,7 +119,7 @@ impl PortfolioMetrics {
         let account_breakdown = Self::build_account_breakdown(
             accounts,
             processed_data.account_values,
-            transactions,
+            processed_data.account_stocks,
             total_current_value,
         );
 
@@ -118,9 +132,10 @@ impl PortfolioMetrics {
             total_fees: processed_data.total_fees,
             net_profit_loss,
             profit_loss_percentage,
-            total_transactions: transactions.len(),
+            total_transactions: processed_data.total_count,
             buy_transactions: transaction_counts.0,
             sell_transactions: transaction_counts.1,
+            upcoming_vestings: processed_data.upcoming_vestings,
             unique_stocks: portfolio_breakdown.len(),
             portfolio_breakdown,
             account_breakdown,
@@ -128,23 +143,43 @@ impl PortfolioMetrics {
         }
     }
 
-    /// Processes all transactions to build stock positions and account values.
+    /// Processes all transactions with a date before `as_of_date` to build stock
+    /// positions and account values.
     /// TODO: Make the target currency (currently hardcoded to EUR) customizable in the future.
     async fn process_transactions(
         transactions: &[Transaction],
         _market_provider: &dyn MarketProvider,
         exchange_rate_provider: &dyn ExchangeRateProvider,
+        as_of_date: Date,
     ) -> ProcessedTransactionData {
         let mut stock_positions: HashMap<String, StockData> = HashMap::new();
         let mut account_values: HashMap<i64, Amount> = HashMap::new();
+        let mut account_stocks: HashMap<i64, std::collections::HashSet<String>> = HashMap::new();
         let mut total_invested = 0.0;
         let mut total_fees = 0.0;
+        let mut total_count = 0;
+        let mut buy_count = 0;
+        let mut sell_count = 0;
+        let mut upcoming_vestings = 0;
 
         for transaction in transactions {
+            // Skip transactions on or after the as_of_date
+            if transaction.transaction_date >= as_of_date {
+                upcoming_vestings += 1;
+                continue;
+            }
+
+            total_count += 1;
             let account_id = transaction.account_id;
             let position = stock_positions
                 .entry(transaction.ticker_symbol.clone())
                 .or_insert((0.0, 0.0, 0.0));
+
+            // Track which stocks are in which accounts
+            account_stocks
+                .entry(account_id)
+                .or_insert_with(std::collections::HashSet::new)
+                .insert(transaction.ticker_symbol.clone());
 
             // Convert transaction values to EUR if needed
             let (eur_price_per_share, eur_fees) = if transaction.currency.to_uppercase() != "EUR" {
@@ -169,6 +204,7 @@ impl PortfolioMetrics {
 
             match transaction.transaction_type {
                 TransactionType::Buy => {
+                    buy_count += 1;
                     position.0 += transaction.share_quantity; // shares
                     position.1 += transaction_value; // total_cost
                     position.2 += eur_fees; // fees
@@ -182,6 +218,7 @@ impl PortfolioMetrics {
                     // Don't add to total_invested or account_values since it's not a purchase
                 }
                 TransactionType::Sell => {
+                    sell_count += 1;
                     // Calculate the proportional cost to subtract based on average cost
                     let current_shares = position.0; // shares before this sell
                     let current_total_cost = position.1; // total_cost before this sell
@@ -209,23 +246,14 @@ impl PortfolioMetrics {
         ProcessedTransactionData {
             stock_positions,
             account_values,
+            account_stocks,
             total_invested,
             total_fees,
+            total_count,
+            buy_count,
+            sell_count,
+            upcoming_vestings,
         }
-    }
-
-    /// Counts the number of buy and sell transactions.
-    fn count_transactions(transactions: &[Transaction]) -> (usize, usize) {
-        let buy_transactions = transactions
-            .iter()
-            .filter(|t| matches!(t.transaction_type, TransactionType::Buy))
-            .count();
-        let sell_transactions = transactions
-            .iter()
-            .filter(|t| matches!(t.transaction_type, TransactionType::Sell))
-            .count();
-
-        (buy_transactions, sell_transactions)
     }
 
     /// Builds portfolio breakdown from stock positions.
@@ -354,11 +382,11 @@ impl PortfolioMetrics {
         (portfolio_breakdown, total_current_value, earliest_update)
     }
 
-    /// Builds an account breakdown from account values and transactions.
+    /// Builds an account breakdown from account values.
     fn build_account_breakdown(
         accounts: &[Account],
         account_values: HashMap<i64, Amount>,
-        transactions: &[Transaction],
+        account_stocks: HashMap<i64, std::collections::HashSet<String>>,
         total_current_value: Amount,
     ) -> Vec<AccountSummary> {
         let mut account_breakdown = Vec::new();
@@ -366,12 +394,10 @@ impl PortfolioMetrics {
         for account in accounts {
             if let Some(account_id) = account.id {
                 let account_value = account_values.get(&account_id).copied().unwrap_or(0.0);
-                let stock_count = transactions
-                    .iter()
-                    .filter(|t| t.account_id == account_id)
-                    .map(|t| &t.ticker_symbol)
-                    .collect::<std::collections::HashSet<_>>()
-                    .len();
+                let stock_count = account_stocks
+                    .get(&account_id)
+                    .map(|stocks| stocks.len())
+                    .unwrap_or(0);
 
                 let percentage = if total_current_value > 0.0 {
                     (account_value / total_current_value) * 100.0
@@ -523,6 +549,7 @@ mod tests {
             &transactions,
             market_provider.as_ref(),
             exchange_rate_provider.as_ref(),
+            Date::from_calendar_date(2025, Month::February, 1).unwrap(),
         )
         .await;
 
@@ -598,6 +625,7 @@ mod tests {
             &transactions,
             market_provider.as_ref(),
             exchange_rate_provider.as_ref(),
+            Date::from_calendar_date(2025, Month::February, 1).unwrap(),
         )
         .await;
 
@@ -664,6 +692,7 @@ mod tests {
             &accounts,
             market_provider.clone(),
             exchange_rate_provider.clone(),
+            Date::from_calendar_date(2025, Month::January, 20).unwrap(),
         )
         .await;
 
@@ -690,5 +719,123 @@ mod tests {
 
         // P&L should be current value minus invested (5000 - 500 = 4500).
         assert_eq!(metrics.net_profit_loss, 4500.0);
+    }
+
+    #[tokio::test]
+    async fn test_portfolio_metrics_with_date_filtering() {
+        let market_provider = Arc::new(MockMarketProvider);
+        let exchange_rate_provider = Arc::new(MockExchangeRateProvider);
+
+        let accounts = vec![Account {
+            id: Some(1),
+            owner_id: 1,
+            name: "Test Account".to_string(),
+            created_at: Date::from_calendar_date(2025, Month::January, 1).unwrap(),
+        }];
+
+        // Create transactions on different dates
+        let transactions = vec![
+            Transaction {
+                id: Some(1),
+                owner_id: 1,
+                account_id: 1,
+                transaction_type: TransactionType::Buy,
+                transaction_date: Date::from_calendar_date(2025, Month::January, 1).unwrap(),
+                ticker_symbol: "AAPL".to_string(),
+                share_quantity: 100.0,
+                price_per_share: 10.0,
+                currency: "EUR".to_string(),
+                fees: 0.0,
+                created_at: Date::from_calendar_date(2025, Month::January, 1).unwrap(),
+            },
+            Transaction {
+                id: Some(2),
+                owner_id: 1,
+                account_id: 1,
+                transaction_type: TransactionType::Buy,
+                transaction_date: Date::from_calendar_date(2025, Month::January, 15).unwrap(),
+                ticker_symbol: "AAPL".to_string(),
+                share_quantity: 50.0,
+                price_per_share: 20.0,
+                currency: "EUR".to_string(),
+                fees: 0.0,
+                created_at: Date::from_calendar_date(2025, Month::January, 15).unwrap(),
+            },
+            Transaction {
+                id: Some(3),
+                owner_id: 1,
+                account_id: 1,
+                transaction_type: TransactionType::Buy,
+                transaction_date: Date::from_calendar_date(2025, Month::February, 1).unwrap(),
+                ticker_symbol: "AAPL".to_string(),
+                share_quantity: 25.0,
+                price_per_share: 30.0,
+                currency: "EUR".to_string(),
+                fees: 0.0,
+                created_at: Date::from_calendar_date(2025, Month::February, 1).unwrap(),
+            },
+        ];
+
+        // Test with as_of_date before all transactions (should be empty)
+        let metrics_before = PortfolioMetrics::from(
+            &transactions,
+            &accounts,
+            market_provider.clone(),
+            exchange_rate_provider.clone(),
+            Date::from_calendar_date(2025, Month::January, 1).unwrap(),
+        )
+        .await;
+
+        assert_eq!(metrics_before.total_transactions, 0);
+        assert_eq!(metrics_before.portfolio_breakdown.len(), 0);
+        assert_eq!(metrics_before.upcoming_vestings, 3); // All 3 transactions are in the future
+
+        // Test with as_of_date after first transaction only
+        let metrics_mid_jan = PortfolioMetrics::from(
+            &transactions,
+            &accounts,
+            market_provider.clone(),
+            exchange_rate_provider.clone(),
+            Date::from_calendar_date(2025, Month::January, 10).unwrap(),
+        )
+        .await;
+
+        assert_eq!(metrics_mid_jan.total_transactions, 1);
+        assert_eq!(metrics_mid_jan.portfolio_breakdown.len(), 1);
+        assert_eq!(metrics_mid_jan.portfolio_breakdown[0].shares, 100.0);
+        assert_eq!(metrics_mid_jan.total_invested, 1000.0); // 100 shares * €10
+        assert_eq!(metrics_mid_jan.upcoming_vestings, 2); // 2 future transactions
+
+        // Test with as_of_date after first two transactions
+        let metrics_end_jan = PortfolioMetrics::from(
+            &transactions,
+            &accounts,
+            market_provider.clone(),
+            exchange_rate_provider.clone(),
+            Date::from_calendar_date(2025, Month::January, 31).unwrap(),
+        )
+        .await;
+
+        assert_eq!(metrics_end_jan.total_transactions, 2);
+        assert_eq!(metrics_end_jan.portfolio_breakdown.len(), 1);
+        assert_eq!(metrics_end_jan.portfolio_breakdown[0].shares, 150.0);
+        assert_eq!(metrics_end_jan.total_invested, 2000.0); // 100*€10 + 50*€20
+        assert_eq!(metrics_end_jan.upcoming_vestings, 1); // 1 future transaction
+
+        // Test with as_of_date after all transactions
+        let metrics_all = PortfolioMetrics::from(
+            &transactions,
+            &accounts,
+            market_provider.clone(),
+            exchange_rate_provider.clone(),
+            Date::from_calendar_date(2025, Month::February, 28).unwrap(),
+        )
+        .await;
+
+        assert_eq!(metrics_all.total_transactions, 3);
+        assert_eq!(metrics_all.portfolio_breakdown.len(), 1);
+        assert_eq!(metrics_all.portfolio_breakdown[0].shares, 175.0);
+        assert_eq!(metrics_all.total_invested, 2750.0); // 100*€10 + 50*€20 + 25*€30
+        assert_eq!(metrics_all.upcoming_vestings, 0); // No future transactions
     }
 }

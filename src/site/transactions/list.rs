@@ -1,5 +1,6 @@
 use maud::{Markup, html};
 use rocket::{State, http::Status, request::FlashMessage};
+use time::OffsetDateTime;
 
 use crate::{
     core::{
@@ -103,10 +104,15 @@ fn render_transactions(
                                     }
                                 }
                                 tbody {
+                                    @let today = OffsetDateTime::now_utc().date();
                                     @for transaction in transactions {
                                         tr {
                                             td {
                                                 (transaction.transaction_date)
+                                                @if transaction.transaction_date >= today {
+                                                    " "
+                                                    "(upcoming)"
+                                                }
                                             }
                                             td {
                                                 @match transaction.transaction_type {

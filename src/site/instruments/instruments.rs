@@ -26,11 +26,13 @@ pub async fn instruments(
         .await
         .map_err(|_| ListAllTransactionsError::DatabaseError(sqlx::Error::RowNotFound))?;
 
+    let today = OffsetDateTime::now_utc().date();
     let metrics = PortfolioMetrics::from(
         &transactions,
         &accounts,
         db_state.market_provider.clone(),
         db_state.exchange_rate_provider.clone(),
+        today,
     )
     .await;
 
@@ -71,11 +73,13 @@ pub async fn instrument_detail(
         .await
         .map_err(|_| ListAllTransactionsError::DatabaseError(sqlx::Error::RowNotFound))?;
 
+    let today = OffsetDateTime::now_utc().date();
     let metrics = PortfolioMetrics::from(
         &transactions,
         &accounts,
         db_state.market_provider.clone(),
         db_state.exchange_rate_provider.clone(),
+        today,
     )
     .await;
 
@@ -247,6 +251,10 @@ fn instruments_table(metrics: &PortfolioMetrics) -> Markup {
                 strong { "Total P&L: " }
                 span class=(if metrics.net_profit_loss >= 0.0 { "positive" } else { "negative" }) {
                     (format!("{:+.2}€ ({:+.1}%)", metrics.net_profit_loss, metrics.profit_loss_percentage))
+                }
+                @if metrics.upcoming_vestings > 0 {
+                    " • "
+                    strong { "Upcoming vestings: " } (metrics.upcoming_vestings)
                 }
             }
         }
